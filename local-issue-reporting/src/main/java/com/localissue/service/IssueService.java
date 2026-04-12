@@ -1,0 +1,22 @@
+package com.localissue.service;
+
+import com.localissue.dto.IssueRequestDto;
+import com.localissue.dto.IssueResponseDto;
+import com.localissue.dto.IssueStatusUpdateDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+
+public interface IssueService {
+
+    IssueResponseDto createIssue(IssueRequestDto requestDto);
+
+    Page<IssueResponseDto> getAllIssues(Pageable pageable);
+
+    IssueResponseDto getIssueById(Long id);
+
+    IssueResponseDto updateIssueStatus(Long id, IssueStatusUpdateDto dto);
+
+    List<IssueResponseDto> getNearbyIssues(double lat, double lng, double radiusKm);
+}

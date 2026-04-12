@@ -1,0 +1,66 @@
+package com.localissue.controller;
+
+import com.localissue.dto.IssueRequestDto;
+import com.localissue.dto.IssueResponseDto;
+import com.localissue.dto.IssueStatusUpdateDto;
+import com.localissue.dto.VoteRequestDto;
+import com.localissue.dto.VoteResponseDto;
+import com.localissue.service.IssueService;
+import com.localissue.service.VoteService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/issues")
+@RequiredArgsConstructor
+public class IssueController {
+
+    private final IssueService issueService;
+    private final VoteService voteService;
+
+    @PostMapping
+    public ResponseEntity<IssueResponseDto> createIssue(@Valid @RequestBody IssueRequestDto requestDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(issueService.createIssue(requestDto));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<IssueResponseDto>> getAllIssues(
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+        return ResponseEntity.ok(issueService.getAllIssues(pageable));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<IssueResponseDto> getIssueById(@PathVariable Long id) {
+        return ResponseEntity.ok(issueService.getIssueById(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<IssueResponseDto> updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody IssueStatusUpdateDto dto) {
+        return ResponseEntity.ok(issueService.updateIssueStatus(id, dto));
+    }
+
+    @GetMapping("/nearby")
+    public ResponseEntity<List<IssueResponseDto>> getNearbyIssues(
+            @RequestParam double lat,
+            @RequestParam double lng,
+            @RequestParam double radius) {
+        return ResponseEntity.ok(issueService.getNearbyIssues(lat, lng, radius));
+    }
+
+    @PostMapping("/{id}/vote")
+    public ResponseEntity<VoteResponseDto> addVote(
+            @PathVariable Long id,
+            @Valid @RequestBody VoteRequestDto requestDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(voteService.addVote(id, requestDto));
+    }
+}
