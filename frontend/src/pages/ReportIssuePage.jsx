@@ -7,12 +7,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import LocationAutocomplete from '@/components/LocationAutocomplete'
 
 const CATEGORIES = ['INFRASTRUCTURE', 'SANITATION', 'SAFETY', 'ENVIRONMENT', 'NOISE', 'OTHER']
 
 const initialForm = {
   title: '',
   description: '',
+  locationName: '',
   latitude: '',
   longitude: '',
   category: '',
@@ -30,12 +32,7 @@ export default function ReportIssuePage() {
     const e = {}
     if (!form.title.trim()) e.title = 'Title is required'
     if (!form.category) e.category = 'Category is required'
-    if (!form.latitude) e.latitude = 'Latitude is required'
-    else if (isNaN(form.latitude) || form.latitude < -90 || form.latitude > 90)
-      e.latitude = 'Must be between -90 and 90'
-    if (!form.longitude) e.longitude = 'Longitude is required'
-    else if (isNaN(form.longitude) || form.longitude < -180 || form.longitude > 180)
-      e.longitude = 'Must be between -180 and 180'
+    if (!form.latitude || !form.longitude) e.location = 'Please select a location from the suggestions'
     return e
   }
 
@@ -56,9 +53,12 @@ export default function ReportIssuePage() {
     setSubmitting(true)
     try {
       const payload = {
-        ...form,
-        latitude: parseFloat(form.latitude),
-        longitude: parseFloat(form.longitude),
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        imageUrl: form.imageUrl,
+        latitude: form.latitude,
+        longitude: form.longitude,
       }
       const { data } = await createIssue(payload)
       setSuccess(true)
@@ -137,33 +137,21 @@ export default function ReportIssuePage() {
               {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="latitude">Latitude *</Label>
-                <Input
-                  id="latitude"
-                  name="latitude"
-                  type="number"
-                  step="any"
-                  placeholder="28.6139"
-                  value={form.latitude}
-                  onChange={handleChange}
-                />
-                {errors.latitude && <p className="text-xs text-destructive">{errors.latitude}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="longitude">Longitude *</Label>
-                <Input
-                  id="longitude"
-                  name="longitude"
-                  type="number"
-                  step="any"
-                  placeholder="77.2090"
-                  value={form.longitude}
-                  onChange={handleChange}
-                />
-                {errors.longitude && <p className="text-xs text-destructive">{errors.longitude}</p>}
-              </div>
+            <div className="space-y-1.5">
+              <Label>Location *</Label>
+              <LocationAutocomplete
+                error={!!errors.location}
+                onSelect={({ name, latitude, longitude }) => {
+                  setForm((prev) => ({ ...prev, locationName: name, latitude, longitude }))
+                  if (errors.location) setErrors((prev) => ({ ...prev, location: undefined }))
+                }}
+              />
+              {errors.location && <p className="text-xs text-destructive">{errors.location}</p>}
+              {form.latitude && form.longitude && (
+                <p className="text-xs text-muted-foreground">
+                  {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
