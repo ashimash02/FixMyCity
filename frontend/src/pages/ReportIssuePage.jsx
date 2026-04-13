@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 import LocationAutocomplete from '@/components/LocationAutocomplete'
+import ImageUpload from '@/components/ImageUpload'
 
 const CATEGORIES = ['INFRASTRUCTURE', 'SANITATION', 'SAFETY', 'ENVIRONMENT', 'NOISE', 'OTHER']
 
@@ -155,13 +156,10 @@ export default function ReportIssuePage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="imageUrl">Image URL (optional)</Label>
-              <Input
-                id="imageUrl"
-                name="imageUrl"
-                placeholder="https://..."
-                value={form.imageUrl}
-                onChange={handleChange}
+              <Label>Image (optional)</Label>
+              <ImageUpload
+                onUpload={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
+                onClear={() => setForm((prev) => ({ ...prev, imageUrl: '' }))}
               />
             </div>
 
