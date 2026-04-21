@@ -8,14 +8,14 @@ export default function Navbar() {
   const { authenticated, user, login, logout } = useAuth()
 
   const links = [
-    { to: '/', label: 'All Issues' },
+    { to: '/home', label: 'All Issues' },
     { to: '/report', label: 'Report Issue' },
   ]
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2 font-bold text-primary">
+        <Link to="/home" className="flex items-center gap-2 font-bold text-primary">
           <MapPin className="h-5 w-5" />
           <span>LocalIssues</span>
         </Link>
