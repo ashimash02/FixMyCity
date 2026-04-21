@@ -3,7 +3,6 @@ package com.localissue.controller;
 import com.localissue.dto.IssueRequestDto;
 import com.localissue.dto.IssueResponseDto;
 import com.localissue.dto.IssueStatusUpdateDto;
-import com.localissue.dto.VoteRequestDto;
 import com.localissue.dto.VoteResponseDto;
 import com.localissue.service.IssueService;
 import com.localissue.service.VoteService;
@@ -14,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -60,7 +61,7 @@ public class IssueController {
     @PostMapping("/{id}/vote")
     public ResponseEntity<VoteResponseDto> addVote(
             @PathVariable Long id,
-            @Valid @RequestBody VoteRequestDto requestDto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(voteService.addVote(id, requestDto));
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(voteService.addVote(id, jwt.getSubject()));
     }
 }

@@ -1,6 +1,5 @@
 package com.localissue.service.impl;
 
-import com.localissue.dto.VoteRequestDto;
 import com.localissue.dto.VoteResponseDto;
 import com.localissue.entity.Issue;
 import com.localissue.entity.Vote;
@@ -21,17 +20,17 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     @Transactional
-    public VoteResponseDto addVote(Long issueId, VoteRequestDto requestDto) {
+    public VoteResponseDto addVote(Long issueId, String userId) {
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
-        if (voteRepository.existsByIssueIdAndUserId(issueId, requestDto.getUserId())) {
-            throw new IllegalStateException("User '" + requestDto.getUserId() + "' has already voted on this issue");
+        if (voteRepository.existsByIssueIdAndUserId(issueId, userId)) {
+            throw new IllegalStateException("User '" + userId + "' has already voted on this issue");
         }
 
         Vote vote = Vote.builder()
                 .issue(issue)
-                .userId(requestDto.getUserId())
+                .userId(userId)
                 .build();
 
         voteRepository.save(vote);

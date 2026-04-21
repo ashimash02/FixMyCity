@@ -3,6 +3,7 @@ import Navbar from '@/components/Navbar'
 import HomePage from '@/pages/HomePage'
 import ReportIssuePage from '@/pages/ReportIssuePage'
 import IssueDetailPage from '@/pages/IssueDetailPage'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function App() {
   return (
@@ -11,7 +12,14 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/report" element={<ReportIssuePage />} />
+          <Route
+            path="/report"
+            element={
+              <ProtectedRoute>
+                <ReportIssuePage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/issues/:id" element={<IssueDetailPage />} />
         </Routes>
       </main>

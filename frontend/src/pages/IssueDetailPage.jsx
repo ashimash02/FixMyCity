@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getIssueById, addVote } from '@/api/issueApi'
+import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import StatusBadge from '@/components/StatusBadge'
 import { MapPin, Tag, ThumbsUp, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
@@ -11,12 +10,12 @@ import { MapPin, Tag, ThumbsUp, ArrowLeft, Loader2, AlertCircle } from 'lucide-r
 export default function IssueDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { authenticated, login } = useAuth()
 
   const [issue, setIssue] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const [userId, setUserId] = useState('')
   const [voting, setVoting] = useState(false)
   const [voteError, setVoteError] = useState(null)
   const [voteSuccess, setVoteSuccess] = useState(false)
@@ -29,17 +28,12 @@ export default function IssueDetailPage() {
   }, [id])
 
   const handleVote = async () => {
-    if (!userId.trim()) {
-      setVoteError('Please enter a user ID to vote.')
-      return
-    }
     setVoting(true)
     setVoteError(null)
     try {
-      const { data } = await addVote(id, userId.trim())
+      const { data } = await addVote(id)
       setIssue((prev) => ({ ...prev, voteCount: data.voteCount }))
       setVoteSuccess(true)
-      setUserId('')
     } catch (err) {
       const msg = err.response?.data?.error
       setVoteError(msg ?? 'Failed to submit vote.')
@@ -130,30 +124,20 @@ export default function IssueDetailPage() {
               <p className="text-sm text-green-600 font-medium">
                 Your vote was recorded. Thank you!
               </p>
+            ) : authenticated ? (
+              <Button onClick={handleVote} disabled={voting} size="default">
+                {voting
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <><ThumbsUp className="mr-1.5 h-4 w-4" />Vote</>
+                }
+              </Button>
             ) : (
-              <div className="flex gap-2">
-                <div className="flex-1 space-y-1">
-                  <Label htmlFor="userId" className="text-xs text-muted-foreground">
-                    Your user ID
-                  </Label>
-                  <Input
-                    id="userId"
-                    placeholder="e.g. user_42"
-                    value={userId}
-                    onChange={(e) => {
-                      setUserId(e.target.value)
-                      setVoteError(null)
-                    }}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={handleVote} disabled={voting} size="default">
-                    {voting ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                      <><ThumbsUp className="mr-1.5 h-4 w-4" />Vote</>
-                    )}
-                  </Button>
-                </div>
-              </div>
+              <button
+                onClick={login}
+                className="text-sm text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                Log in to vote
+              </button>
             )}
 
             {voteError && (

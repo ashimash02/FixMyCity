@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
-import { MapPin } from 'lucide-react'
+import { MapPin, LogIn, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 
 export default function Navbar() {
   const { pathname } = useLocation()
+  const { authenticated, user, login, logout } = useAuth()
 
   const links = [
     { to: '/', label: 'All Issues' },
@@ -17,22 +19,47 @@ export default function Navbar() {
           <MapPin className="h-5 w-5" />
           <span>LocalIssues</span>
         </Link>
-        <nav className="flex items-center gap-1">
-          {links.map(({ to, label }) => (
-            <Link
-              key={to}
-              to={to}
-              className={cn(
-                'rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
-                pathname === to
-                  ? 'bg-primary text-white'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )}
+        <div className="flex items-center gap-3">
+          <nav className="flex items-center gap-1">
+            {links.map(({ to, label }) => (
+              <Link
+                key={to}
+                to={to}
+                className={cn(
+                  'rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
+                  pathname === to
+                    ? 'bg-primary text-white'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                )}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+
+          {authenticated ? (
+            <div className="flex items-center gap-2 border-l pl-3">
+              <span className="text-sm text-muted-foreground">
+                {user?.preferred_username}
+              </span>
+              <button
+                onClick={logout}
+                className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Log out
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={login}
+              className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              {label}
-            </Link>
-          ))}
-        </nav>
+              <LogIn className="h-4 w-4" />
+              Log in
+            </button>
+          )}
+        </div>
       </div>
     </header>
   )
