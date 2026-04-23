@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface IssueService {
 
-    IssueResponseDto createIssue(IssueRequestDto requestDto);
+    IssueResponseDto createIssue(IssueRequestDto requestDto, String userId, String username);
 
     Page<IssueResponseDto> getAllIssues(Pageable pageable);
 

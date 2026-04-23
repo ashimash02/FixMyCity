@@ -36,6 +36,12 @@ public class Issue {
 
     private String imageUrl;
 
+    @Column(updatable = false)
+    private String createdBy;         // Keycloak subject (UUID) — stable unique identifier
+
+    @Column(updatable = false)
+    private String createdByUsername; // Keycloak preferred_username — for display
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

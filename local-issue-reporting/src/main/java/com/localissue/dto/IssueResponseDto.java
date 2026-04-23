@@ -19,6 +19,8 @@ public class IssueResponseDto {
     private String category;
     private String status;
     private String imageUrl;
+    private String createdBy;
+    private String createdByUsername;
     private LocalDateTime createdAt;
     private long voteCount;
 }

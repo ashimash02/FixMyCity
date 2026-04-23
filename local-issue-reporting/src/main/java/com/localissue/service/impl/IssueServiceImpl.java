@@ -28,7 +28,7 @@ public class IssueServiceImpl implements IssueService {
     private final VoteRepository voteRepository;
 
     @Override
-    public IssueResponseDto createIssue(IssueRequestDto requestDto) {
+    public IssueResponseDto createIssue(IssueRequestDto requestDto, String userId, String username) {
         Issue issue = Issue.builder()
                 .title(requestDto.getTitle())
                 .description(requestDto.getDescription())
@@ -37,6 +37,8 @@ public class IssueServiceImpl implements IssueService {
                 .category(requestDto.getCategory())
                 .imageUrl(requestDto.getImageUrl())
                 .status("OPEN")
+                .createdBy(userId)
+                .createdByUsername(username)
                 .build();
 
         return mapToResponse(issueRepository.save(issue));
@@ -121,6 +123,8 @@ public class IssueServiceImpl implements IssueService {
                 .category(issue.getCategory())
                 .status(issue.getStatus())
                 .imageUrl(issue.getImageUrl())
+                .createdBy(issue.getCreatedBy())
+                .createdByUsername(issue.getCreatedByUsername())
                 .createdAt(issue.getCreatedAt())
                 .voteCount(voteRepository.countByIssueId(issue.getId()))
                 .build();

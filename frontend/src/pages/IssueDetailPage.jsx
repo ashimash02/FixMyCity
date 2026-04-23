@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import StatusBadge from '@/components/StatusBadge'
-import { MapPin, Tag, ThumbsUp, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
+import { MapPin, Tag, ThumbsUp, ArrowLeft, Loader2, AlertCircle, User } from 'lucide-react'
 
 export default function IssueDetailPage() {
   const { id } = useParams()
@@ -54,7 +54,7 @@ export default function IssueDetailPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12 text-center">
         <p className="text-destructive">{error}</p>
-        <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>
+        <Button variant="outline" className="mt-4" onClick={() => navigate('/home')}>
           Back to Issues
         </Button>
       </div>
@@ -64,7 +64,7 @@ export default function IssueDetailPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/home')}
         className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -88,6 +88,12 @@ export default function IssueDetailPage() {
               <span className="flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5" />
                 {issue.latitude.toFixed(5)}, {issue.longitude.toFixed(5)}
+              </span>
+            )}
+            {issue.createdByUsername && (
+              <span className="flex items-center gap-1">
+                <User className="h-3.5 w-3.5" />
+                {issue.createdByUsername}
               </span>
             )}
             <span className="ml-auto text-xs">

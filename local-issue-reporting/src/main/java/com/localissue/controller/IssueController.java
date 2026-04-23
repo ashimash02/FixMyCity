@@ -28,8 +28,13 @@ public class IssueController {
     private final VoteService voteService;
 
     @PostMapping
-    public ResponseEntity<IssueResponseDto> createIssue(@Valid @RequestBody IssueRequestDto requestDto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(issueService.createIssue(requestDto));
+    public ResponseEntity<IssueResponseDto> createIssue(
+            @Valid @RequestBody IssueRequestDto requestDto,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        String username = jwt.getClaimAsString("preferred_username");
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(issueService.createIssue(requestDto, userId, username));
     }
 
     @GetMapping
