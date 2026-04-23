@@ -20,6 +20,8 @@ public class IssueRequestDto {
     @NotNull(message = "Longitude is required")
     private Double longitude;
 
+    private String locationName;
+
     @NotBlank(message = "Category is required")
     private String category;
 

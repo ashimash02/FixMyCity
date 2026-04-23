@@ -22,5 +22,5 @@ export const getIssueById = (id) =>
 export const createIssue = (data) =>
   api.post('/issues', data)
 
-export const addVote = (issueId) =>
+export const toggleVote = (issueId) =>
   api.post(`/issues/${issueId}/vote`)

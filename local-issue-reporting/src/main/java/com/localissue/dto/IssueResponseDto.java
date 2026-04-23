@@ -16,6 +16,7 @@ public class IssueResponseDto {
     private String description;
     private Double latitude;
     private Double longitude;
+    private String locationName;
     private String category;
     private String status;
     private String imageUrl;
@@ -23,4 +24,5 @@ public class IssueResponseDto {
     private String createdByUsername;
     private LocalDateTime createdAt;
     private long voteCount;
+    private boolean hasVoted;
 }

@@ -20,32 +20,22 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     @Transactional
-    public VoteResponseDto addVote(Long issueId, String userId) {
+    public VoteResponseDto toggleVote(Long issueId, String userId) {
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
-        if (voteRepository.existsByIssueIdAndUserId(issueId, userId)) {
-            throw new IllegalStateException("User '" + userId + "' has already voted on this issue");
+        boolean alreadyVoted = voteRepository.existsByIssueIdAndUserId(issueId, userId);
+
+        if (alreadyVoted) {
+            voteRepository.deleteByIssueIdAndUserId(issueId, userId);
+        } else {
+            voteRepository.save(Vote.builder().issue(issue).userId(userId).build());
         }
-
-        Vote vote = Vote.builder()
-                .issue(issue)
-                .userId(userId)
-                .build();
-
-        voteRepository.save(vote);
-
-        long newCount = voteRepository.countByIssueId(issueId);
 
         return VoteResponseDto.builder()
                 .issueId(issueId)
-                .voteCount(newCount)
-                .message("Vote recorded successfully")
+                .totalVotes(voteRepository.countByIssueId(issueId))
+                .hasVoted(!alreadyVoted)
                 .build();
-    }
-
-    @Override
-    public long getVoteCount(Long issueId) {
-        return voteRepository.countByIssueId(issueId);
     }
 }

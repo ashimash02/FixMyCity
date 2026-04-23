@@ -8,6 +8,6 @@ import lombok.Getter;
 public class VoteResponseDto {
 
     private Long issueId;
-    private long voteCount;
-    private String message;
+    private long totalVotes;
+    private boolean hasVoted;
 }

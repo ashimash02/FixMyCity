@@ -12,9 +12,9 @@ public interface IssueService {
 
     IssueResponseDto createIssue(IssueRequestDto requestDto, String userId, String username);
 
-    Page<IssueResponseDto> getAllIssues(Pageable pageable);
+    Page<IssueResponseDto> getAllIssues(Pageable pageable, String requestingUserId);
 
-    IssueResponseDto getIssueById(Long id);
+    IssueResponseDto getIssueById(Long id, String requestingUserId);
 
     IssueResponseDto updateIssueStatus(Long id, IssueStatusUpdateDto dto);
 

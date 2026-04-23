@@ -60,6 +60,7 @@ export default function ReportIssuePage() {
         imageUrl: form.imageUrl,
         latitude: form.latitude,
         longitude: form.longitude,
+        locationName: form.locationName,
       }
       const { data } = await createIssue(payload)
       setSuccess(true)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getIssueById, addVote } from '@/api/issueApi'
+import { getIssueById, toggleVote } from '@/api/issueApi'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,27 +16,37 @@ export default function IssueDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const [hasVoted, setHasVoted] = useState(false)
   const [voting, setVoting] = useState(false)
   const [voteError, setVoteError] = useState(null)
-  const [voteSuccess, setVoteSuccess] = useState(false)
 
   useEffect(() => {
     getIssueById(id)
-      .then(({ data }) => setIssue(data))
+      .then(({ data }) => {
+        setIssue(data)
+        setHasVoted(data.hasVoted)
+      })
       .catch(() => setError('Issue not found or server unavailable.'))
       .finally(() => setLoading(false))
   }, [id])
 
   const handleVote = async () => {
+    if (voting) return
+    // Optimistic update
+    const wasVoted = hasVoted
+    setHasVoted(!wasVoted)
+    setIssue((prev) => ({ ...prev, voteCount: wasVoted ? prev.voteCount - 1 : prev.voteCount + 1 }))
     setVoting(true)
     setVoteError(null)
     try {
-      const { data } = await addVote(id)
-      setIssue((prev) => ({ ...prev, voteCount: data.voteCount }))
-      setVoteSuccess(true)
+      const { data } = await toggleVote(id)
+      setIssue((prev) => ({ ...prev, voteCount: data.totalVotes }))
+      setHasVoted(data.hasVoted)
     } catch (err) {
-      const msg = err.response?.data?.error
-      setVoteError(msg ?? 'Failed to submit vote.')
+      // Roll back
+      setHasVoted(wasVoted)
+      setIssue((prev) => ({ ...prev, voteCount: wasVoted ? prev.voteCount + 1 : prev.voteCount - 1 }))
+      setVoteError(err.response?.data?.error ?? 'Failed to submit vote.')
     } finally {
       setVoting(false)
     }
@@ -84,10 +94,10 @@ export default function IssueDetailPage() {
                 {issue.category}
               </span>
             )}
-            {issue.latitude && issue.longitude && (
+            {(issue.locationName || (issue.latitude && issue.longitude)) && (
               <span className="flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5" />
-                {issue.latitude.toFixed(5)}, {issue.longitude.toFixed(5)}
+                {issue.locationName ?? `${issue.latitude.toFixed(5)}, ${issue.longitude.toFixed(5)}`}
               </span>
             )}
             {issue.createdByUsername && (
@@ -126,17 +136,24 @@ export default function IssueDetailPage() {
               </span>
             </div>
 
-            {voteSuccess ? (
-              <p className="text-sm text-green-600 font-medium">
-                Your vote was recorded. Thank you!
-              </p>
-            ) : authenticated ? (
-              <Button onClick={handleVote} disabled={voting} size="default">
+            {authenticated ? (
+              <button
+                onClick={handleVote}
+                disabled={voting}
+                className={[
+                  'flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                  hasVoted
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'border border-input text-muted-foreground hover:bg-accent hover:text-foreground',
+                  voting ? 'opacity-60 cursor-not-allowed' : '',
+                ].join(' ')}
+              >
                 {voting
                   ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <><ThumbsUp className="mr-1.5 h-4 w-4" />Vote</>
+                  : <ThumbsUp className="h-4 w-4" />
                 }
-              </Button>
+                {hasVoted ? 'Voted' : 'Vote'}
+              </button>
             ) : (
               <button
                 onClick={login}

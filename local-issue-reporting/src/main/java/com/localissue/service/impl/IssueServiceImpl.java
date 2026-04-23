@@ -34,6 +34,7 @@ public class IssueServiceImpl implements IssueService {
                 .description(requestDto.getDescription())
                 .latitude(requestDto.getLatitude())
                 .longitude(requestDto.getLongitude())
+                .locationName(requestDto.getLocationName())
                 .category(requestDto.getCategory())
                 .imageUrl(requestDto.getImageUrl())
                 .status("OPEN")
@@ -41,19 +42,19 @@ public class IssueServiceImpl implements IssueService {
                 .createdByUsername(username)
                 .build();
 
-        return mapToResponse(issueRepository.save(issue));
+        return mapToResponse(issueRepository.save(issue), userId);
     }
 
     @Override
-    public Page<IssueResponseDto> getAllIssues(Pageable pageable) {
-        return issueRepository.findAll(pageable).map(this::mapToResponse);
+    public Page<IssueResponseDto> getAllIssues(Pageable pageable, String requestingUserId) {
+        return issueRepository.findAll(pageable).map(issue -> mapToResponse(issue, requestingUserId));
     }
 
     @Override
-    public IssueResponseDto getIssueById(Long id) {
+    public IssueResponseDto getIssueById(Long id, String requestingUserId) {
         Issue issue = issueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
-        return mapToResponse(issue);
+        return mapToResponse(issue, requestingUserId);
     }
 
     @Override
@@ -91,7 +92,7 @@ public class IssueServiceImpl implements IssueService {
                         haversineDistance(lat, lng, a.getLatitude(), a.getLongitude()),
                         haversineDistance(lat, lng, b.getLatitude(), b.getLongitude())
                 ))
-                .map(this::mapToResponse)
+                .map(issue -> mapToResponse(issue, null))
                 .toList();
     }
 
@@ -113,13 +114,17 @@ public class IssueServiceImpl implements IssueService {
         return EARTH_RADIUS_KM * c;
     }
 
-    private IssueResponseDto mapToResponse(Issue issue) {
+    private IssueResponseDto mapToResponse(Issue issue, String requestingUserId) {
+        boolean hasVoted = requestingUserId != null &&
+                voteRepository.existsByIssueIdAndUserId(issue.getId(), requestingUserId);
+
         return IssueResponseDto.builder()
                 .id(issue.getId())
                 .title(issue.getTitle())
                 .description(issue.getDescription())
                 .latitude(issue.getLatitude())
                 .longitude(issue.getLongitude())
+                .locationName(issue.getLocationName())
                 .category(issue.getCategory())
                 .status(issue.getStatus())
                 .imageUrl(issue.getImageUrl())
@@ -127,6 +132,7 @@ public class IssueServiceImpl implements IssueService {
                 .createdByUsername(issue.getCreatedByUsername())
                 .createdAt(issue.getCreatedAt())
                 .voteCount(voteRepository.countByIssueId(issue.getId()))
+                .hasVoted(hasVoted)
                 .build();
     }
 }

@@ -10,4 +10,6 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     long countByIssueId(Long issueId);
 
     boolean existsByIssueIdAndUserId(Long issueId, String userId);
+
+    void deleteByIssueIdAndUserId(Long issueId, String userId);
 }

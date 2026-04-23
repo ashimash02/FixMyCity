@@ -29,6 +29,8 @@ public class Issue {
 
     private Double longitude;
 
+    private String locationName;
+
     private String category;
 
     @Column(nullable = false)

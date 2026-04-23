@@ -39,13 +39,18 @@ public class IssueController {
 
     @GetMapping
     public ResponseEntity<Page<IssueResponseDto>> getAllIssues(
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(issueService.getAllIssues(pageable));
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getSubject() : null;
+        return ResponseEntity.ok(issueService.getAllIssues(pageable, userId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<IssueResponseDto> getIssueById(@PathVariable Long id) {
-        return ResponseEntity.ok(issueService.getIssueById(id));
+    public ResponseEntity<IssueResponseDto> getIssueById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getSubject() : null;
+        return ResponseEntity.ok(issueService.getIssueById(id, userId));
     }
 
     @PatchMapping("/{id}/status")
@@ -64,9 +69,9 @@ public class IssueController {
     }
 
     @PostMapping("/{id}/vote")
-    public ResponseEntity<VoteResponseDto> addVote(
+    public ResponseEntity<VoteResponseDto> toggleVote(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(voteService.addVote(id, jwt.getSubject()));
+        return ResponseEntity.ok(voteService.toggleVote(id, jwt.getSubject()));
     }
 }

@@ -53,7 +53,7 @@ export default function HomePage() {
 
       {!loading && !error && issues.length > 0 && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {issues.map((issue) => (
               <IssueCard key={issue.id} issue={issue} />
             ))}
