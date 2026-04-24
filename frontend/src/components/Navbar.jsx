@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
-import { MapPin, LogIn, LogOut } from 'lucide-react'
+import { LogIn, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
+import NavLocationPicker from '@/components/NavLocationPicker'
 
 export default function Navbar() {
   const { pathname } = useLocation()
@@ -15,10 +16,13 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link to="/home" className="flex items-center gap-2 font-bold text-primary">
-          <MapPin className="h-5 w-5" />
-          <span>LocalIssues</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/home" className="flex items-center gap-2 font-bold text-primary">
+            <span>LocalIssues</span>
+          </Link>
+          <div className="h-4 w-px bg-border mx-1" />
+          <NavLocationPicker />
+        </div>
         <div className="flex items-center gap-3">
           <nav className="flex items-center gap-1">
             {links.map(({ to, label }) => (

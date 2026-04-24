@@ -78,6 +78,13 @@ export default function IssueCard({ issue }) {
             <span className="flex items-center gap-1">
               <MapPin className="h-3 w-3 shrink-0" />
               <span className="line-clamp-1">{issue.locationName}</span>
+              {issue.distanceKm != null && (
+                <span className="text-primary font-medium">
+                  · {issue.distanceKm < 1
+                    ? `${Math.round(issue.distanceKm * 1000)} m`
+                    : `${issue.distanceKm.toFixed(1)} km`} away
+                </span>
+              )}
             </span>
           )}
           {issue.category && (

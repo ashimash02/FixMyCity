@@ -25,4 +25,5 @@ public class IssueResponseDto {
     private LocalDateTime createdAt;
     private long voteCount;
     private boolean hasVoted;
+    private Double distanceKm; // null when no location filter is active
 }

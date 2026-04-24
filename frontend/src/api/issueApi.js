@@ -13,8 +13,25 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-export const getAllIssues = (page = 0, size = 10) =>
-  api.get(`/issues?page=${page}&size=${size}&sort=createdAt,desc`)
+export const getAllIssues = (page = 0, size = 10, location = null) => {
+  const params = new URLSearchParams({ page, size, sort: 'createdAt,desc' })
+  if (location?.latitude != null && location?.longitude != null) {
+    params.set('lat', location.latitude)
+    params.set('lng', location.longitude)
+    if (location.radius != null) params.set('radius', location.radius)
+  }
+  return api.get(`/issues?${params}`)
+}
+
+export const getTrendingIssues = (page = 0, size = 10, location = null) => {
+  const params = new URLSearchParams({ page, size })
+  if (location?.latitude != null && location?.longitude != null) {
+    params.set('lat', location.latitude)
+    params.set('lng', location.longitude)
+    if (location.radius != null) params.set('radius', location.radius)
+  }
+  return api.get(`/issues/trending?${params}`)
+}
 
 export const getIssueById = (id) =>
   api.get(`/issues/${id}`)

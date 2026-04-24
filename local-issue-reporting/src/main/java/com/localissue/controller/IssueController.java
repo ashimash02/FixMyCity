@@ -3,6 +3,7 @@ package com.localissue.controller;
 import com.localissue.dto.IssueRequestDto;
 import com.localissue.dto.IssueResponseDto;
 import com.localissue.dto.IssueStatusUpdateDto;
+import com.localissue.dto.LocationFilter;
 import com.localissue.dto.VoteResponseDto;
 import com.localissue.service.IssueService;
 import com.localissue.service.VoteService;
@@ -17,7 +18,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import org.springframework.data.domain.PageRequest;
+
 
 @RestController
 @RequestMapping("/api/issues")
@@ -40,9 +42,26 @@ public class IssueController {
     @GetMapping
     public ResponseEntity<Page<IssueResponseDto>> getAllIssues(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng,
+            @RequestParam(defaultValue = "25") double radius,
             @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt != null ? jwt.getSubject() : null;
-        return ResponseEntity.ok(issueService.getAllIssues(pageable, userId));
+        LocationFilter location = (lat != null && lng != null) ? new LocationFilter(lat, lng, radius) : null;
+        return ResponseEntity.ok(issueService.getAllIssues(pageable, userId, location));
+    }
+
+    @GetMapping("/trending")
+    public ResponseEntity<Page<IssueResponseDto>> getTrendingIssues(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng,
+            @RequestParam(defaultValue = "25") double radius,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getSubject() : null;
+        LocationFilter location = (lat != null && lng != null) ? new LocationFilter(lat, lng, radius) : null;
+        return ResponseEntity.ok(issueService.getTrendingIssues(PageRequest.of(page, size), userId, location));
     }
 
     @GetMapping("/{id}")
@@ -58,14 +77,6 @@ public class IssueController {
             @PathVariable Long id,
             @Valid @RequestBody IssueStatusUpdateDto dto) {
         return ResponseEntity.ok(issueService.updateIssueStatus(id, dto));
-    }
-
-    @GetMapping("/nearby")
-    public ResponseEntity<List<IssueResponseDto>> getNearbyIssues(
-            @RequestParam double lat,
-            @RequestParam double lng,
-            @RequestParam double radius) {
-        return ResponseEntity.ok(issueService.getNearbyIssues(lat, lng, radius));
     }
 
     @PostMapping("/{id}/vote")

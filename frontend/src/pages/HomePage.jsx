@@ -1,30 +1,49 @@
 import { useEffect, useState } from 'react'
-import { getAllIssues } from '@/api/issueApi'
+import { getAllIssues, getTrendingIssues } from '@/api/issueApi'
+import { useLocationContext } from '@/context/LocationContext'
 import IssueCard from '@/components/IssueCard'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, Clock, TrendingUp } from 'lucide-react'
+
+const TABS = [
+  { key: 'latest',   label: 'Latest',   icon: Clock },
+  { key: 'trending', label: 'Trending', icon: TrendingUp },
+]
 
 export default function HomePage() {
+  const { location } = useLocationContext()
+  const [tab, setTab] = useState('latest')
   const [issues, setIssues] = useState([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Reset to page 0 when location or tab changes
+  useEffect(() => { setPage(0) }, [location, tab])
+
   useEffect(() => {
     setLoading(true)
     setError(null)
-    getAllIssues(page)
+    const fetch = tab === 'trending' ? getTrendingIssues : getAllIssues
+    fetch(page, 10, location ?? null)
       .then(({ data }) => {
         setIssues(data.content)
         setTotalPages(data.totalPages)
       })
       .catch(() => setError('Failed to load issues. Is the backend running?'))
       .finally(() => setLoading(false))
-  }, [page])
+  }, [tab, page, location])
+
+  const handleTabChange = (key) => {
+    if (key === tab) return
+    setTab(key)
+    setPage(0)
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
+      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Reported Issues</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -32,12 +51,43 @@ export default function HomePage() {
         </p>
       </div>
 
+      {/* Tab toggle */}
+      <div className="mb-6 inline-flex rounded-lg border bg-muted p-1 gap-1">
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => handleTabChange(key)}
+            className={[
+              'flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
+              tab === key
+                ? 'bg-white text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
+            ].join(' ')}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Active location filter pill */}
+      {location && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Showing issues in</span>
+          <span className="rounded-full bg-primary/10 px-3 py-0.5 text-xs font-medium text-primary">
+            {location.name.split(',')[0].trim()}
+          </span>
+        </div>
+      )}
+
+      {/* Loading */}
       {loading && (
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
 
+      {/* Error */}
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
@@ -45,12 +95,14 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Empty */}
       {!loading && !error && issues.length === 0 && (
         <div className="py-20 text-center text-muted-foreground">
           No issues reported yet. Be the first to report one!
         </div>
       )}
 
+      {/* Feed */}
       {!loading && !error && issues.length > 0 && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

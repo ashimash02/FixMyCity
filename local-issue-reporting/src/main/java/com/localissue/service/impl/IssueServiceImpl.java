@@ -3,6 +3,7 @@ package com.localissue.service.impl;
 import com.localissue.dto.IssueRequestDto;
 import com.localissue.dto.IssueResponseDto;
 import com.localissue.dto.IssueStatusUpdateDto;
+import com.localissue.dto.LocationFilter;
 import com.localissue.entity.Issue;
 import com.localissue.exception.ResourceNotFoundException;
 import com.localissue.repository.IssueRepository;
@@ -10,9 +11,11 @@ import com.localissue.repository.VoteRepository;
 import com.localissue.service.IssueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -46,8 +49,32 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
-    public Page<IssueResponseDto> getAllIssues(Pageable pageable, String requestingUserId) {
-        return issueRepository.findAll(pageable).map(issue -> mapToResponse(issue, requestingUserId));
+    public Page<IssueResponseDto> getAllIssues(Pageable pageable, String requestingUserId, LocationFilter location) {
+        if (location == null) {
+            return issueRepository.findAll(pageable)
+                    .map(issue -> mapToResponse(issue, requestingUserId, null));
+        }
+        // Bounding box pre-filter, then precise Haversine, then sort nearest first
+        List<IssueResponseDto> results = candidatesWithDistance(location).stream()
+                .sorted(Comparator.comparingDouble(IssueDist::distanceKm))
+                .map(d -> mapToResponse(d.issue(), requestingUserId, d.distanceKm()))
+                .toList();
+        return toPage(results, pageable);
+    }
+
+    @Override
+    public Page<IssueResponseDto> getTrendingIssues(Pageable pageable, String requestingUserId, LocationFilter location) {
+        if (location == null) {
+            return issueRepository.findAllOrderByVoteCountDesc(pageable)
+                    .map(issue -> mapToResponse(issue, requestingUserId, null));
+        }
+        // Bounding box pre-filter, then precise Haversine, then map (mapToResponse fetches vote count),
+        // then sort by votes desc
+        List<IssueResponseDto> results = candidatesWithDistance(location).stream()
+                .map(d -> mapToResponse(d.issue(), requestingUserId, d.distanceKm()))
+                .sorted(Comparator.comparingLong(IssueResponseDto::getVoteCount).reversed())
+                .toList();
+        return toPage(results, pageable);
     }
 
     @Override
@@ -70,36 +97,42 @@ public class IssueServiceImpl implements IssueService {
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
 
         issue.setStatus(newStatus);
-        return mapToResponse(issueRepository.save(issue));
+        return mapToResponse(issueRepository.save(issue), null);
     }
 
-    @Override
-    public List<IssueResponseDto> getNearbyIssues(double lat, double lng, double radiusKm) {
-        if (lat < -90 || lat > 90) {
-            throw new IllegalArgumentException("Latitude must be between -90 and 90");
-        }
-        if (lng < -180 || lng > 180) {
-            throw new IllegalArgumentException("Longitude must be between -180 and 180");
-        }
-        if (radiusKm <= 0) {
-            throw new IllegalArgumentException("Radius must be greater than 0");
-        }
+    // ── Private helpers ──────────────────────────────────────────────────────
 
-        return issueRepository.findAll().stream()
-                .filter(issue -> issue.getLatitude() != null && issue.getLongitude() != null)
-                .filter(issue -> haversineDistance(lat, lng, issue.getLatitude(), issue.getLongitude()) <= radiusKm)
-                .sorted((a, b) -> Double.compare(
-                        haversineDistance(lat, lng, a.getLatitude(), a.getLongitude()),
-                        haversineDistance(lat, lng, b.getLatitude(), b.getLongitude())
-                ))
-                .map(issue -> mapToResponse(issue, null))
+    private record IssueDist(Issue issue, double distanceKm) {}
+
+    /** Bounding box pre-filter + precise Haversine → sorted candidates with distance. */
+    private List<IssueDist> candidatesWithDistance(LocationFilter filter) {
+        double lat = filter.latitude();
+        double lng = filter.longitude();
+        double radius = filter.radiusKm();
+
+        // 1 degree latitude ≈ 111.32 km; longitude degree shrinks with cos(lat)
+        double latDelta = radius / 111.32;
+        double lngDelta = radius / (111.32 * Math.cos(Math.toRadians(lat)));
+
+        return issueRepository.findWithinBoundingBox(
+                        lat - latDelta, lat + latDelta,
+                        Math.max(-180, lng - lngDelta), Math.min(180, lng + lngDelta))
+                .stream()
+                .map(issue -> new IssueDist(issue,
+                        haversineDistance(lat, lng, issue.getLatitude(), issue.getLongitude())))
+                .filter(d -> d.distanceKm() <= radius)
                 .toList();
     }
 
-    /**
-     * Calculates the great-circle distance between two coordinates using the Haversine formula.
-     * @return distance in kilometers
-     */
+    /** Manual pagination using PageImpl after in-memory sort. */
+    private Page<IssueResponseDto> toPage(List<IssueResponseDto> sorted, Pageable pageable) {
+        int total = sorted.size();
+        int start = (int) Math.min(pageable.getOffset(), total);
+        int end   = Math.min(start + pageable.getPageSize(), total);
+        return new PageImpl<>(sorted.subList(start, end), pageable, total);
+    }
+
+    /** Haversine formula — returns great-circle distance in kilometres. */
     private double haversineDistance(double lat1, double lng1, double lat2, double lng2) {
         final int EARTH_RADIUS_KM = 6371;
 
@@ -115,6 +148,10 @@ public class IssueServiceImpl implements IssueService {
     }
 
     private IssueResponseDto mapToResponse(Issue issue, String requestingUserId) {
+        return mapToResponse(issue, requestingUserId, null);
+    }
+
+    private IssueResponseDto mapToResponse(Issue issue, String requestingUserId, Double distanceKm) {
         boolean hasVoted = requestingUserId != null &&
                 voteRepository.existsByIssueIdAndUserId(issue.getId(), requestingUserId);
 
@@ -133,6 +170,7 @@ public class IssueServiceImpl implements IssueService {
                 .createdAt(issue.getCreatedAt())
                 .voteCount(voteRepository.countByIssueId(issue.getId()))
                 .hasVoted(hasVoted)
+                .distanceKm(distanceKm)
                 .build();
     }
 }
