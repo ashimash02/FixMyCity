@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/issues").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/issues/*/vote").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/issues/*/comments").authenticated()
                 .requestMatchers(HttpMethod.PATCH, "/api/issues/*/status").authenticated()
                 .anyRequest().authenticated()
             )

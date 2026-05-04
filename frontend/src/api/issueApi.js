@@ -39,6 +39,14 @@ export const getIssueById = (id) =>
 export const createIssue = (data) =>
   api.post('/issues', data)
 
+export const getComments = (issueId, page = 0, size = 20) => {
+  const params = new URLSearchParams({ page, size })
+  return api.get(`/issues/${issueId}/comments?${params}`)
+}
+
+export const addComment = (issueId, content) =>
+  api.post(`/issues/${issueId}/comments`, { content })
+
 export const getMyIssues = (page = 0, size = 10) => {
   const params = new URLSearchParams({ page, size, sort: 'createdAt,desc' })
   return api.get(`/issues/my-posts?${params}`)

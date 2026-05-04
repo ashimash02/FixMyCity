@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import StatusBadge from '@/components/StatusBadge'
+import CommentSection from '@/components/CommentSection'
 import { MapPin, Tag, ThumbsUp, ArrowLeft, Loader2, AlertCircle, User } from 'lucide-react'
 
 export default function IssueDetailPage() {
@@ -125,6 +126,11 @@ export default function IssueDetailPage() {
               onError={(e) => (e.currentTarget.style.display = 'none')}
             />
           )}
+
+          {/* Comments */}
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <CommentSection issueId={id} />
+          </div>
 
           {/* Vote Section */}
           <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
