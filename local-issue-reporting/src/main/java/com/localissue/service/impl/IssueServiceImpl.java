@@ -85,6 +85,12 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
+    public Page<IssueResponseDto> getMyIssues(Pageable pageable, String userId) {
+        return issueRepository.findByCreatedBy(userId, pageable)
+                .map(issue -> mapToResponse(issue, userId));
+    }
+
+    @Override
     public IssueResponseDto updateIssueStatus(Long id, IssueStatusUpdateDto dto) {
         String newStatus = dto.getStatus().toUpperCase();
         if (!VALID_STATUSES.contains(newStatus)) {

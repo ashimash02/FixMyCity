@@ -4,6 +4,8 @@ import LoginPage from '@/pages/LoginPage'
 import HomePage from '@/pages/HomePage'
 import ReportIssuePage from '@/pages/ReportIssuePage'
 import IssueDetailPage from '@/pages/IssueDetailPage'
+import MyPostsPage from '@/pages/MyPostsPage'
+import SettingsPage from '@/pages/SettingsPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function App() {
@@ -24,6 +26,8 @@ export default function App() {
                   <Route path="/home" element={<HomePage />} />
                   <Route path="/report" element={<ReportIssuePage />} />
                   <Route path="/issues/:id" element={<IssueDetailPage />} />
+                  <Route path="/my-posts" element={<MyPostsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/home" replace />} />
                 </Routes>
               </main>

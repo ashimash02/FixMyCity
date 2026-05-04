@@ -22,6 +22,8 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
             @Param("minLat") double minLat, @Param("maxLat") double maxLat,
             @Param("minLng") double minLng, @Param("maxLng") double maxLng);
 
+    Page<Issue> findByCreatedBy(String createdBy, Pageable pageable);
+
     // Trending — all issues, ordered by vote count (used when no location filter)
     @Query(
         value = "SELECT i.* FROM issues i LEFT JOIN votes v ON v.issue_id = i.id " +

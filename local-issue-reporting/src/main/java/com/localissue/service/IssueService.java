@@ -18,4 +18,6 @@ public interface IssueService {
     IssueResponseDto getIssueById(Long id, String requestingUserId);
 
     IssueResponseDto updateIssueStatus(Long id, IssueStatusUpdateDto dto);
+
+    Page<IssueResponseDto> getMyIssues(Pageable pageable, String userId);
 }

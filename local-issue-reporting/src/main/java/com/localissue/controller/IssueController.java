@@ -79,6 +79,13 @@ public class IssueController {
         return ResponseEntity.ok(issueService.updateIssueStatus(id, dto));
     }
 
+    @GetMapping("/my-posts")
+    public ResponseEntity<Page<IssueResponseDto>> getMyIssues(
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(issueService.getMyIssues(pageable, jwt.getSubject()));
+    }
+
     @PostMapping("/{id}/vote")
     public ResponseEntity<VoteResponseDto> toggleVote(
             @PathVariable Long id,

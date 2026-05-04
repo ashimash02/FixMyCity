@@ -39,5 +39,10 @@ export const getIssueById = (id) =>
 export const createIssue = (data) =>
   api.post('/issues', data)
 
+export const getMyIssues = (page = 0, size = 10) => {
+  const params = new URLSearchParams({ page, size, sort: 'createdAt,desc' })
+  return api.get(`/issues/my-posts?${params}`)
+}
+
 export const toggleVote = (issueId) =>
   api.post(`/issues/${issueId}/vote`)

@@ -18,6 +18,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.GET, "/api/issues/my-posts").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/issues").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/issues").authenticated()

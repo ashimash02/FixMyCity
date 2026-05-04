@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LogIn, LogOut } from 'lucide-react'
+import { LogIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import NavLocationPicker from '@/components/NavLocationPicker'
+import ProfileDropdown from '@/components/ProfileDropdown'
 
 export default function Navbar() {
   const { pathname } = useLocation()
-  const { authenticated, user, login, logout } = useAuth()
+  const { authenticated, login } = useAuth()
 
   const links = [
     { to: '/home', label: 'All Issues' },
@@ -42,17 +43,8 @@ export default function Navbar() {
           </nav>
 
           {authenticated ? (
-            <div className="flex items-center gap-2 border-l pl-3">
-              <span className="text-sm text-muted-foreground">
-                {user?.preferred_username}
-              </span>
-              <button
-                onClick={logout}
-                className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Log out
-              </button>
+            <div className="border-l pl-3">
+              <ProfileDropdown />
             </div>
           ) : (
             <button
