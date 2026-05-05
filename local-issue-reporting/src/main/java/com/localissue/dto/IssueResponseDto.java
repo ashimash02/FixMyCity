@@ -4,12 +4,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Builder
-public class IssueResponseDto {
+public class IssueResponseDto implements Serializable {
 
     private Long id;
     private String title;

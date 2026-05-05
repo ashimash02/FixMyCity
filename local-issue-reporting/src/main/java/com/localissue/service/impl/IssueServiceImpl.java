@@ -12,15 +12,19 @@ import com.localissue.repository.IssueRepository;
 import com.localissue.repository.VoteRepository;
 import com.localissue.service.IssueService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class IssueServiceImpl implements IssueService {
@@ -28,10 +32,13 @@ public class IssueServiceImpl implements IssueService {
     private static final Set<String> VALID_STATUSES = Set.of(
             "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"
     );
+    private static final String TRENDING_CACHE_PREFIX = "trending:page:";
+    private static final Duration TRENDING_TTL = Duration.ofMinutes(10);
 
     private final IssueRepository issueRepository;
     private final VoteRepository voteRepository;
     private final FollowRepository followRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public IssueResponseDto createIssue(IssueRequestDto requestDto, String userId, String username) {
@@ -48,7 +55,9 @@ public class IssueServiceImpl implements IssueService {
                 .createdByUsername(username)
                 .build();
 
-        return mapToResponse(issueRepository.save(issue), userId);
+        IssueResponseDto result = mapToResponse(issueRepository.save(issue), userId);
+        evictTrendingCache();
+        return result;
     }
 
     @Override
@@ -66,18 +75,39 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Page<IssueResponseDto> getTrendingIssues(Pageable pageable, String requestingUserId, LocationFilter location) {
-        if (location == null) {
-            return issueRepository.findAllOrderByVoteCountDesc(pageable)
-                    .map(issue -> mapToResponse(issue, requestingUserId, null));
+        if (location != null) {
+            List<IssueResponseDto> results = candidatesWithDistance(location).stream()
+                    .map(d -> mapToResponse(d.issue(), requestingUserId, d.distanceKm()))
+                    .sorted(Comparator.comparingLong(IssueResponseDto::getVoteCount).reversed())
+                    .toList();
+            return toPage(results, pageable);
         }
-        // Bounding box pre-filter, then precise Haversine, then map (mapToResponse fetches vote count),
-        // then sort by votes desc
-        List<IssueResponseDto> results = candidatesWithDistance(location).stream()
-                .map(d -> mapToResponse(d.issue(), requestingUserId, d.distanceKm()))
-                .sorted(Comparator.comparingLong(IssueResponseDto::getVoteCount).reversed())
-                .toList();
-        return toPage(results, pageable);
+
+        String cacheKey = TRENDING_CACHE_PREFIX + pageable.getPageNumber() + ":" + pageable.getPageSize();
+        try {
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached instanceof List<?> cachedList) {
+                List<IssueResponseDto> dtos = (List<IssueResponseDto>) cachedList;
+                dtos = hydrateHasVoted(dtos, requestingUserId);
+                return new PageImpl<>(dtos, pageable, dtos.size());
+            }
+        } catch (Exception e) {
+            log.warn("Redis read failed for key {}: {}", cacheKey, e.getMessage());
+        }
+
+        Page<IssueResponseDto> page = issueRepository.findAllOrderByVoteCountDesc(pageable)
+                .map(issue -> mapToResponse(issue, null, null));
+
+        try {
+            redisTemplate.opsForValue().set(cacheKey, page.getContent(), TRENDING_TTL);
+        } catch (Exception e) {
+            log.warn("Redis write failed for key {}: {}", cacheKey, e.getMessage());
+        }
+
+        List<IssueResponseDto> hydrated = hydrateHasVoted(page.getContent(), requestingUserId);
+        return new PageImpl<>(hydrated, pageable, page.getTotalElements());
     }
 
     @Override
@@ -110,7 +140,9 @@ public class IssueServiceImpl implements IssueService {
         issue.setCategory(dto.getCategory());
         issue.setImageUrl(dto.getImageUrl());
 
-        return mapToResponse(issueRepository.save(issue), requestingUserId);
+        IssueResponseDto result = mapToResponse(issueRepository.save(issue), requestingUserId);
+        evictTrendingCache();
+        return result;
     }
 
     @Override
@@ -133,6 +165,7 @@ public class IssueServiceImpl implements IssueService {
         }
 
         issueRepository.delete(issue);
+        evictTrendingCache();
     }
 
     @Override
@@ -224,5 +257,44 @@ public class IssueServiceImpl implements IssueService {
                 .hasVoted(hasVoted)
                 .distanceKm(distanceKm)
                 .build();
+    }
+
+    /** Patches hasVoted onto cached DTOs without re-querying per issue — one bulk query. */
+    private List<IssueResponseDto> hydrateHasVoted(List<IssueResponseDto> dtos, String userId) {
+        if (userId == null || dtos.isEmpty()) return dtos;
+        List<Long> ids = dtos.stream().map(IssueResponseDto::getId).toList();
+        Set<Long> voted = voteRepository.findVotedIssueIds(userId, ids);
+        return dtos.stream()
+                .map(dto -> IssueResponseDto.builder()
+                        .id(dto.getId())
+                        .title(dto.getTitle())
+                        .description(dto.getDescription())
+                        .latitude(dto.getLatitude())
+                        .longitude(dto.getLongitude())
+                        .locationName(dto.getLocationName())
+                        .category(dto.getCategory())
+                        .status(dto.getStatus())
+                        .imageUrl(dto.getImageUrl())
+                        .createdBy(dto.getCreatedBy())
+                        .createdByUsername(dto.getCreatedByUsername())
+                        .createdAt(dto.getCreatedAt())
+                        .updatedAt(dto.getUpdatedAt())
+                        .voteCount(dto.getVoteCount())
+                        .hasVoted(voted.contains(dto.getId()))
+                        .distanceKm(dto.getDistanceKm())
+                        .build())
+                .toList();
+    }
+
+    /** Deletes all trending cache keys matching the prefix pattern. */
+    public void evictTrendingCache() {
+        try {
+            Set<String> keys = redisTemplate.keys(TRENDING_CACHE_PREFIX + "*");
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+        } catch (Exception e) {
+            log.warn("Redis eviction failed: {}", e.getMessage());
+        }
     }
 }

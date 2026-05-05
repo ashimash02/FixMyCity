@@ -1,4 +1,4 @@
-﻿package com.localissue.service.impl;
+package com.localissue.service.impl;
 
 import com.localissue.dto.VoteResponseDto;
 import com.localissue.entity.Issue;
@@ -22,6 +22,7 @@ public class VoteServiceImpl implements VoteService {
     private final IssueRepository issueRepository;
     private final UserProfileRepository userProfileRepository;
     private final NotificationService notificationService;
+    private final IssueServiceImpl issueServiceImpl;
 
     @Override
     @Transactional
@@ -48,6 +49,8 @@ public class VoteServiceImpl implements VoteService {
                 );
             }
         }
+
+        issueServiceImpl.evictTrendingCache();
 
         return VoteResponseDto.builder()
                 .issueId(issueId)

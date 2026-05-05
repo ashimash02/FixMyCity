@@ -1,4 +1,4 @@
-﻿package com.localissue.controller;
+package com.localissue.controller;
 
 import com.localissue.dto.CommentRequestDto;
 import com.localissue.dto.CommentResponseDto;
@@ -66,7 +66,6 @@ public class CommentController {
 
         commentRepository.save(comment);
 
-        // Notify issue owner if they exist in user_profiles and aren't the commenter
         if (issue.getCreatedBy() != null) {
             userProfileRepository.findById(issue.getCreatedBy()).ifPresent(recipient -> {
                 userProfileRepository.findById(userId).ifPresent(sender ->
