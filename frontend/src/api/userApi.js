@@ -16,3 +16,10 @@ api.interceptors.request.use((config) => {
 export const getMe = () => api.get('/user/me')
 
 export const updateBio = (bio) => api.patch('/user/me/bio', { bio })
+
+export const getUserProfile = (userId) => api.get(`/user/${userId}`)
+
+export const getUserIssues = (userId, page = 0, size = 10) => {
+  const params = new URLSearchParams({ page, size })
+  return api.get(`/user/${userId}/issues?${params}`)
+}

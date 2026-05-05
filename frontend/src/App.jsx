@@ -6,6 +6,7 @@ import ReportIssuePage from '@/pages/ReportIssuePage'
 import IssueDetailPage from '@/pages/IssueDetailPage'
 import MyPostsPage from '@/pages/MyPostsPage'
 import SettingsPage from '@/pages/SettingsPage'
+import UserProfilePage from '@/pages/UserProfilePage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
                   <Route path="/issues/:id" element={<IssueDetailPage />} />
                   <Route path="/my-posts" element={<MyPostsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/user/:userId" element={<UserProfilePage />} />
                   <Route path="*" element={<Navigate to="/home" replace />} />
                 </Routes>
               </main>

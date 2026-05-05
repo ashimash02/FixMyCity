@@ -54,7 +54,17 @@ export default function IssueCard({ issue }) {
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <User className="h-3 w-3" />
-            {issue.createdByUsername ?? 'Anonymous'}
+            {issue.createdBy ? (
+              <Link
+                to={`/user/${issue.createdBy}`}
+                className="hover:text-primary hover:underline underline-offset-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {issue.createdByUsername ?? 'Anonymous'}
+              </Link>
+            ) : (
+              <span>{issue.createdByUsername ?? 'Anonymous'}</span>
+            )}
           </span>
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Loader2, Send, MessageSquare, AlertCircle } from 'lucide-react'
 import { getComments, addComment } from '@/api/issueApi'
 import { useAuth } from '@/context/AuthContext'
@@ -122,7 +123,12 @@ export default function CommentSection({ issueId }) {
           {comments.map((c) => (
             <li key={c.id} className="rounded-lg border bg-muted/30 px-4 py-3 text-sm">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="font-medium">{c.createdByUsername}</span>
+                <Link
+                  to={`/user/${c.createdBy}`}
+                  className="font-medium hover:text-primary hover:underline underline-offset-2"
+                >
+                  {c.createdByUsername}
+                </Link>
                 <span className="text-xs text-muted-foreground">
                   {new Date(c.createdAt).toLocaleString()}
                 </span>

@@ -1,11 +1,13 @@
 package com.localissue.controller;
 
+import com.localissue.dto.IssueEditDto;
 import com.localissue.dto.IssueRequestDto;
 import com.localissue.dto.IssueResponseDto;
 import com.localissue.dto.IssueStatusUpdateDto;
 import com.localissue.dto.LocationFilter;
 import com.localissue.dto.VoteResponseDto;
 import com.localissue.service.IssueService;
+import com.localissue.service.UserProfileService;
 import com.localissue.service.VoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class IssueController {
 
     private final IssueService issueService;
     private final VoteService voteService;
+    private final UserProfileService userProfileService;
 
     @PostMapping
     public ResponseEntity<IssueResponseDto> createIssue(
@@ -35,6 +38,7 @@ public class IssueController {
             @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         String username = jwt.getClaimAsString("preferred_username");
+        userProfileService.ensureExists(userId, username);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(issueService.createIssue(requestDto, userId, username));
     }
@@ -70,6 +74,22 @@ public class IssueController {
             @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt != null ? jwt.getSubject() : null;
         return ResponseEntity.ok(issueService.getIssueById(id, userId));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<IssueResponseDto> editIssue(
+            @PathVariable Long id,
+            @Valid @RequestBody IssueEditDto dto,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(issueService.editIssue(id, dto, jwt.getSubject()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteIssue(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        issueService.deleteIssue(id, jwt.getSubject());
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/status")

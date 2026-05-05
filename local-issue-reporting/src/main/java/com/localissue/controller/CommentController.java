@@ -7,6 +7,7 @@ import com.localissue.entity.Issue;
 import com.localissue.exception.ResourceNotFoundException;
 import com.localissue.repository.CommentRepository;
 import com.localissue.repository.IssueRepository;
+import com.localissue.service.UserProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,7 @@ public class CommentController {
 
     private final CommentRepository commentRepository;
     private final IssueRepository issueRepository;
+    private final UserProfileService userProfileService;
 
     @GetMapping
     public ResponseEntity<Page<CommentResponseDto>> getComments(
@@ -46,10 +48,14 @@ public class CommentController {
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
+        String userId = jwt.getSubject();
+        String username = jwt.getClaimAsString("preferred_username");
+        userProfileService.ensureExists(userId, username);
+
         Comment comment = Comment.builder()
                 .content(dto.getContent())
-                .createdBy(jwt.getSubject())
-                .createdByUsername(jwt.getClaimAsString("preferred_username"))
+                .createdBy(userId)
+                .createdByUsername(username)
                 .issue(issue)
                 .build();
 
@@ -60,6 +66,7 @@ public class CommentController {
         return CommentResponseDto.builder()
                 .id(c.getId())
                 .content(c.getContent())
+                .createdBy(c.getCreatedBy())
                 .createdByUsername(c.getCreatedByUsername())
                 .createdAt(c.getCreatedAt())
                 .build();

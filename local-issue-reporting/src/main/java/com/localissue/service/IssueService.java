@@ -1,5 +1,6 @@
 package com.localissue.service;
 
+import com.localissue.dto.IssueEditDto;
 import com.localissue.dto.IssueRequestDto;
 import com.localissue.dto.IssueResponseDto;
 import com.localissue.dto.IssueStatusUpdateDto;
@@ -20,4 +21,8 @@ public interface IssueService {
     IssueResponseDto updateIssueStatus(Long id, IssueStatusUpdateDto dto);
 
     Page<IssueResponseDto> getMyIssues(Pageable pageable, String userId);
+
+    IssueResponseDto editIssue(Long id, IssueEditDto dto, String requestingUserId);
+
+    void deleteIssue(Long id, String requestingUserId);
 }

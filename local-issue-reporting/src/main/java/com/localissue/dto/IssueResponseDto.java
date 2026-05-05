@@ -23,6 +23,7 @@ public class IssueResponseDto {
     private String createdBy;
     private String createdByUsername;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private long voteCount;
     private boolean hasVoted;
     private Double distanceKm; // null when no location filter is active

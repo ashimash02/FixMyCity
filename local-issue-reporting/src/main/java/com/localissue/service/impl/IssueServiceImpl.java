@@ -1,5 +1,6 @@
 package com.localissue.service.impl;
 
+import com.localissue.dto.IssueEditDto;
 import com.localissue.dto.IssueRequestDto;
 import com.localissue.dto.IssueResponseDto;
 import com.localissue.dto.IssueStatusUpdateDto;
@@ -91,6 +92,38 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
+    public IssueResponseDto editIssue(Long id, IssueEditDto dto, String requestingUserId) {
+        Issue issue = issueRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
+
+        if (!issue.getCreatedBy().equals(requestingUserId)) {
+            throw new SecurityException("You are not allowed to edit this issue");
+        }
+
+        issue.setTitle(dto.getTitle());
+        issue.setDescription(dto.getDescription());
+        issue.setLocationName(dto.getLocationName());
+        issue.setLatitude(dto.getLatitude());
+        issue.setLongitude(dto.getLongitude());
+        issue.setCategory(dto.getCategory());
+        issue.setImageUrl(dto.getImageUrl());
+
+        return mapToResponse(issueRepository.save(issue), requestingUserId);
+    }
+
+    @Override
+    public void deleteIssue(Long id, String requestingUserId) {
+        Issue issue = issueRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
+
+        if (!issue.getCreatedBy().equals(requestingUserId)) {
+            throw new SecurityException("You are not allowed to delete this issue");
+        }
+
+        issueRepository.delete(issue);
+    }
+
+    @Override
     public IssueResponseDto updateIssueStatus(Long id, IssueStatusUpdateDto dto) {
         String newStatus = dto.getStatus().toUpperCase();
         if (!VALID_STATUSES.contains(newStatus)) {
@@ -174,6 +207,7 @@ public class IssueServiceImpl implements IssueService {
                 .createdBy(issue.getCreatedBy())
                 .createdByUsername(issue.getCreatedByUsername())
                 .createdAt(issue.getCreatedAt())
+                .updatedAt(issue.getUpdatedAt())
                 .voteCount(voteRepository.countByIssueId(issue.getId()))
                 .hasVoted(hasVoted)
                 .distanceKm(distanceKm)
