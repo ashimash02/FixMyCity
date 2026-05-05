@@ -20,7 +20,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/user/*/issues").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/user/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/issues/following").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/issues/my-posts").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/user/*/follow-status").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/user/*/follow").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/user/*/follow").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/issues").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/issues").authenticated()

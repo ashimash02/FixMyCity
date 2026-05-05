@@ -25,4 +25,6 @@ public interface IssueService {
     IssueResponseDto editIssue(Long id, IssueEditDto dto, String requestingUserId);
 
     void deleteIssue(Long id, String requestingUserId);
+
+    Page<IssueResponseDto> getFollowingFeed(Pageable pageable, String userId);
 }

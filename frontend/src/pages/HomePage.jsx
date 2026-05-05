@@ -1,32 +1,41 @@
 import { useEffect, useState } from 'react'
-import { getAllIssues, getTrendingIssues } from '@/api/issueApi'
+import { getAllIssues, getTrendingIssues, getFollowingFeed } from '@/api/issueApi'
 import { useLocationContext } from '@/context/LocationContext'
 import IssueCard from '@/components/IssueCard'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertCircle, Clock, TrendingUp } from 'lucide-react'
+import { Loader2, AlertCircle, Clock, TrendingUp, Users } from 'lucide-react'
 
 const TABS = [
-  { key: 'latest',   label: 'Latest',   icon: Clock },
-  { key: 'trending', label: 'Trending', icon: TrendingUp },
+  { key: 'trending',  label: 'Trending',  icon: TrendingUp },
+  { key: 'following', label: 'Following', icon: Users },
+  { key: 'latest',    label: 'Latest',    icon: Clock },
 ]
 
 export default function HomePage() {
   const { location } = useLocationContext()
-  const [tab, setTab] = useState('latest')
+  const [tab, setTab] = useState('trending')
   const [issues, setIssues] = useState([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Reset to page 0 when location or tab changes
   useEffect(() => { setPage(0) }, [location, tab])
 
   useEffect(() => {
     setLoading(true)
     setError(null)
-    const fetch = tab === 'trending' ? getTrendingIssues : getAllIssues
-    fetch(page, 10, location ?? null)
+
+    let request
+    if (tab === 'following') {
+      request = getFollowingFeed(page)
+    } else if (tab === 'trending') {
+      request = getTrendingIssues(page, 10, location ?? null)
+    } else {
+      request = getAllIssues(page, 10, location ?? null)
+    }
+
+    request
       .then(({ data }) => {
         setIssues(data.content)
         setTotalPages(data.totalPages)
@@ -41,9 +50,12 @@ export default function HomePage() {
     setPage(0)
   }
 
+  const emptyMessage = tab === 'following'
+    ? "You're not following anyone yet, or they haven't posted issues."
+    : 'No issues reported yet. Be the first to report one!'
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Reported Issues</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -70,8 +82,8 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* Active location filter pill */}
-      {location && (
+      {/* Location filter pill — not shown on following tab */}
+      {location && tab !== 'following' && (
         <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
           <span>Showing issues in</span>
           <span className="rounded-full bg-primary/10 px-3 py-0.5 text-xs font-medium text-primary">
@@ -80,14 +92,12 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Loading */}
       {loading && (
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
@@ -95,14 +105,12 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Empty */}
       {!loading && !error && issues.length === 0 && (
         <div className="py-20 text-center text-muted-foreground">
-          No issues reported yet. Be the first to report one!
+          {emptyMessage}
         </div>
       )}
 
-      {/* Feed */}
       {!loading && !error && issues.length > 0 && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -113,23 +121,13 @@ export default function HomePage() {
 
           {totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p - 1)}
-                disabled={page === 0}
-              >
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>
                 Previous
               </Button>
               <span className="text-sm text-muted-foreground">
                 Page {page + 1} of {totalPages}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-              >
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>
                 Next
               </Button>
             </div>

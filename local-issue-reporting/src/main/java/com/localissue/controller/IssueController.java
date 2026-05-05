@@ -99,6 +99,13 @@ public class IssueController {
         return ResponseEntity.ok(issueService.updateIssueStatus(id, dto));
     }
 
+    @GetMapping("/following")
+    public ResponseEntity<Page<IssueResponseDto>> getFollowingFeed(
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(issueService.getFollowingFeed(pageable, jwt.getSubject()));
+    }
+
     @GetMapping("/my-posts")
     public ResponseEntity<Page<IssueResponseDto>> getMyIssues(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,

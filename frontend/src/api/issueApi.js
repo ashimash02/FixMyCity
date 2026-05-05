@@ -51,6 +51,11 @@ export const editIssue = (id, data) => api.put(`/issues/${id}`, data)
 
 export const deleteIssue = (id) => api.delete(`/issues/${id}`)
 
+export const getFollowingFeed = (page = 0, size = 10) => {
+  const params = new URLSearchParams({ page, size, sort: 'createdAt,desc' })
+  return api.get(`/issues/following?${params}`)
+}
+
 export const getMyIssues = (page = 0, size = 10) => {
   const params = new URLSearchParams({ page, size, sort: 'createdAt,desc' })
   return api.get(`/issues/my-posts?${params}`)

@@ -1,22 +1,31 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Loader2, AlertCircle, ArrowLeft, FileText } from 'lucide-react'
-import { getUserProfile, getUserIssues } from '@/api/userApi'
+import { Loader2, AlertCircle, ArrowLeft, FileText, UserPlus, UserMinus } from 'lucide-react'
+import { getUserProfile, getUserIssues, getFollowStatus, followUser, unfollowUser } from '@/api/userApi'
+import { useAuth } from '@/context/AuthContext'
 import IssueCard from '@/components/IssueCard'
 import { Button } from '@/components/ui/button'
 
 export default function UserProfilePage() {
   const { userId } = useParams()
   const navigate = useNavigate()
+  const { user: currentUser } = useAuth()
 
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [profileError, setProfileError] = useState(null)
 
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
+  const [followLoading, setFollowLoading] = useState(false)
+
   const [issues, setIssues] = useState([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [issuesLoading, setIssuesLoading] = useState(true)
+
+  const isOwnProfile = currentUser?.sub === userId
 
   useEffect(() => {
     setProfileLoading(true)
@@ -27,6 +36,18 @@ export default function UserProfilePage() {
       .finally(() => setProfileLoading(false))
   }, [userId])
 
+  // Load follow status only for other users' profiles
+  useEffect(() => {
+    if (isOwnProfile || !currentUser) return
+    getFollowStatus(userId)
+      .then(({ data }) => {
+        setIsFollowing(data.isFollowing)
+        setFollowerCount(data.followerCount)
+        setFollowingCount(data.followingCount)
+      })
+      .catch(() => {})
+  }, [userId, isOwnProfile, currentUser])
+
   useEffect(() => {
     setIssuesLoading(true)
     getUserIssues(userId, page)
@@ -36,6 +57,29 @@ export default function UserProfilePage() {
       })
       .finally(() => setIssuesLoading(false))
   }, [userId, page])
+
+  const handleFollowToggle = async () => {
+    if (followLoading) return
+    // Optimistic update
+    const wasFollowing = isFollowing
+    setIsFollowing(!wasFollowing)
+    setFollowerCount((c) => wasFollowing ? c - 1 : c + 1)
+    setFollowLoading(true)
+    try {
+      const { data } = wasFollowing
+        ? await unfollowUser(userId)
+        : await followUser(userId)
+      setIsFollowing(data.isFollowing)
+      setFollowerCount(data.followerCount)
+      setFollowingCount(data.followingCount)
+    } catch {
+      // Roll back
+      setIsFollowing(wasFollowing)
+      setFollowerCount((c) => wasFollowing ? c + 1 : c - 1)
+    } finally {
+      setFollowLoading(false)
+    }
+  }
 
   if (profileLoading) {
     return (
@@ -52,9 +96,7 @@ export default function UserProfilePage() {
           <AlertCircle className="h-5 w-5" />
           <span>{profileError}</span>
         </div>
-        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-          Go back
-        </Button>
+        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>Go back</Button>
       </div>
     )
   }
@@ -72,23 +114,59 @@ export default function UserProfilePage() {
       </button>
 
       {/* Profile card */}
-      <div className="rounded-xl border bg-white shadow-sm p-6 mb-8 flex items-start gap-5">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
-          {initials}
-        </div>
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold">{profile.username}</h1>
-          {profile.bio ? (
-            <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-              {profile.bio}
-            </p>
-          ) : (
-            <p className="mt-1.5 text-sm text-muted-foreground italic">No bio yet.</p>
+      <div className="rounded-xl border bg-white shadow-sm p-6 mb-8">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4 min-w-0">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold">{profile.username}</h1>
+              {profile.bio ? (
+                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {profile.bio}
+                </p>
+              ) : (
+                <p className="mt-1.5 text-sm text-muted-foreground italic">No bio yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Follow button — only for other users */}
+          {!isOwnProfile && currentUser && (
+            <Button
+              size="sm"
+              variant={isFollowing ? 'outline' : 'default'}
+              onClick={handleFollowToggle}
+              disabled={followLoading}
+              className="shrink-0"
+            >
+              {followLoading
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : isFollowing
+                  ? <><UserMinus className="h-3.5 w-3.5 mr-1.5" />Unfollow</>
+                  : <><UserPlus className="h-3.5 w-3.5 mr-1.5" />Follow</>
+              }
+            </Button>
           )}
         </div>
+
+        {/* Stats row */}
+        {!isOwnProfile && (
+          <div className="mt-4 flex gap-5 border-t pt-4 text-sm">
+            <span>
+              <span className="font-semibold">{followerCount}</span>{' '}
+              <span className="text-muted-foreground">followers</span>
+            </span>
+            <span>
+              <span className="font-semibold">{followingCount}</span>{' '}
+              <span className="text-muted-foreground">following</span>
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Issues section */}
+      {/* Issues */}
       <div>
         <h2 className="flex items-center gap-2 text-base font-semibold mb-4">
           <FileText className="h-4 w-4" />
@@ -117,23 +195,11 @@ export default function UserProfilePage() {
 
             {totalPages > 1 && (
               <div className="mt-6 flex items-center justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 0}
-                >
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>
                   Previous
                 </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {page + 1} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= totalPages - 1}
-                >
+                <span className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>
                   Next
                 </Button>
               </div>

@@ -7,6 +7,7 @@ import com.localissue.dto.IssueStatusUpdateDto;
 import com.localissue.dto.LocationFilter;
 import com.localissue.entity.Issue;
 import com.localissue.exception.ResourceNotFoundException;
+import com.localissue.repository.FollowRepository;
 import com.localissue.repository.IssueRepository;
 import com.localissue.repository.VoteRepository;
 import com.localissue.service.IssueService;
@@ -30,6 +31,7 @@ public class IssueServiceImpl implements IssueService {
 
     private final IssueRepository issueRepository;
     private final VoteRepository voteRepository;
+    private final FollowRepository followRepository;
 
     @Override
     public IssueResponseDto createIssue(IssueRequestDto requestDto, String userId, String username) {
@@ -109,6 +111,16 @@ public class IssueServiceImpl implements IssueService {
         issue.setImageUrl(dto.getImageUrl());
 
         return mapToResponse(issueRepository.save(issue), requestingUserId);
+    }
+
+    @Override
+    public Page<IssueResponseDto> getFollowingFeed(Pageable pageable, String userId) {
+        List<String> followingIds = followRepository.findFollowingIdsByFollowerId(userId);
+        if (followingIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        return issueRepository.findByCreatedByIn(followingIds, pageable)
+                .map(issue -> mapToResponse(issue, userId));
     }
 
     @Override

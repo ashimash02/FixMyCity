@@ -23,3 +23,13 @@ export const getUserIssues = (userId, page = 0, size = 10) => {
   const params = new URLSearchParams({ page, size })
   return api.get(`/user/${userId}/issues?${params}`)
 }
+
+export const getFollowStatus = (userId) => api.get(`/user/${userId}/follow-status`)
+
+export const followUser = (userId) => api.post(`/user/${userId}/follow`)
+
+export const unfollowUser = (userId) => api.delete(`/user/${userId}/follow`)
+
+export const getFollowers = (userId) => api.get(`/user/${userId}/followers`)
+
+export const getFollowing = (userId) => api.get(`/user/${userId}/following`)
