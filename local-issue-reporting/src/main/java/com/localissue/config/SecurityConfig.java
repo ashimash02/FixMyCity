@@ -20,6 +20,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/user/*/issues").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/user/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/notifications").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/notifications/unread-count").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/api/notifications/read-all").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/api/notifications/*/read").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/issues/following").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/issues/my-posts").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/user/*/follow-status").authenticated()

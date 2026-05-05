@@ -1,12 +1,15 @@
-package com.localissue.controller;
+﻿package com.localissue.controller;
 
 import com.localissue.dto.CommentRequestDto;
 import com.localissue.dto.CommentResponseDto;
 import com.localissue.entity.Comment;
 import com.localissue.entity.Issue;
+import com.localissue.entity.NotificationType;
 import com.localissue.exception.ResourceNotFoundException;
 import com.localissue.repository.CommentRepository;
 import com.localissue.repository.IssueRepository;
+import com.localissue.repository.UserProfileRepository;
+import com.localissue.service.NotificationService;
 import com.localissue.service.UserProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,8 @@ public class CommentController {
     private final CommentRepository commentRepository;
     private final IssueRepository issueRepository;
     private final UserProfileService userProfileService;
+    private final UserProfileRepository userProfileRepository;
+    private final NotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<Page<CommentResponseDto>> getComments(
@@ -59,7 +64,22 @@ public class CommentController {
                 .issue(issue)
                 .build();
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(commentRepository.save(comment)));
+        commentRepository.save(comment);
+
+        // Notify issue owner if they exist in user_profiles and aren't the commenter
+        if (issue.getCreatedBy() != null) {
+            userProfileRepository.findById(issue.getCreatedBy()).ifPresent(recipient -> {
+                userProfileRepository.findById(userId).ifPresent(sender ->
+                    notificationService.notify(
+                        recipient, sender,
+                        NotificationType.COMMENT,
+                        username + " commented on your issue: \"" + issue.getTitle() + "\"",
+                        issue)
+                );
+            });
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(comment));
     }
 
     private CommentResponseDto toDto(Comment c) {

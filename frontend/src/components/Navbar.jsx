@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import NavLocationPicker from '@/components/NavLocationPicker'
 import ProfileDropdown from '@/components/ProfileDropdown'
+import NotificationBell from '@/components/NotificationBell'
 
 export default function Navbar() {
   const { pathname } = useLocation()
@@ -43,7 +44,8 @@ export default function Navbar() {
           </nav>
 
           {authenticated ? (
-            <div className="border-l pl-3">
+            <div className="flex items-center gap-1 border-l pl-3">
+              <NotificationBell />
               <ProfileDropdown />
             </div>
           ) : (
