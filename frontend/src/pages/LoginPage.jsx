@@ -16,7 +16,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-center rounded-full bg-primary/10 p-3">
             <MapPin className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold">LocalIssues</h1>
+          <h1 className="text-xl font-bold">FixMyCity</h1>
           <p className="text-sm text-muted-foreground">
             Sign in to report issues and vote in your community
           </p>
