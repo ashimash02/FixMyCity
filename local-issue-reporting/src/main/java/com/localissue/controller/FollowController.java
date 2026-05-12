@@ -2,12 +2,11 @@ package com.localissue.controller;
 
 import com.localissue.dto.FollowResponseDto;
 import com.localissue.entity.Follow;
-import com.localissue.entity.NotificationType;
 import com.localissue.entity.UserProfile;
 import com.localissue.exception.ResourceNotFoundException;
+import com.localissue.kafka.producer.NotificationEventProducer;
 import com.localissue.repository.FollowRepository;
 import com.localissue.repository.UserProfileRepository;
-import com.localissue.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,7 +24,7 @@ public class FollowController {
 
     private final FollowRepository followRepository;
     private final UserProfileRepository userProfileRepository;
-    private final NotificationService notificationService;
+    private final NotificationEventProducer notificationEventProducer;
 
     @PostMapping("/{userId}/follow")
     @Transactional
@@ -51,11 +50,10 @@ public class FollowController {
                 .following(following)
                 .build());
 
-        notificationService.notify(
-                following, follower,
-                NotificationType.FOLLOW,
-                follower.getUsername() + " started following you",
-                null);
+        notificationEventProducer.publishFollowEvent(
+                following.getUserId(),
+                follower.getUserId(),
+                follower.getUsername());
 
         return ResponseEntity.ok(buildStats(follower, following));
     }
