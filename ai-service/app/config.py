@@ -16,8 +16,9 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_ttl_seconds: int = 3600
 
-    # Gemini — to be used by gemini_service.py
+    # Gemini
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash-lite"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
