@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -25,6 +26,17 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
     Page<Issue> findByCreatedBy(String createdBy, Pageable pageable);
 
     Page<Issue> findByCreatedByIn(List<String> userIds, Pageable pageable);
+
+    // Bounding-box pre-filter with date range — used by proactive and on-demand summary generation
+    @Query("SELECT i FROM Issue i WHERE " +
+           "i.latitude IS NOT NULL AND i.longitude IS NOT NULL AND " +
+           "i.latitude  BETWEEN :minLat AND :maxLat AND " +
+           "i.longitude BETWEEN :minLng AND :maxLng AND " +
+           "i.createdAt >= :since")
+    List<Issue> findWithinBoundingBoxSince(
+            @Param("minLat") double minLat, @Param("maxLat") double maxLat,
+            @Param("minLng") double minLng, @Param("maxLng") double maxLng,
+            @Param("since") LocalDateTime since);
 
     // Trending — all issues, ordered by vote count (used when no location filter)
     @Query(

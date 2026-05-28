@@ -1,11 +1,13 @@
 package com.localissue.controller;
 
+import com.localissue.dto.AreaSummaryResponseDto;
 import com.localissue.dto.IssueEditDto;
 import com.localissue.dto.IssueRequestDto;
 import com.localissue.dto.IssueResponseDto;
 import com.localissue.dto.IssueStatusUpdateDto;
 import com.localissue.dto.LocationFilter;
 import com.localissue.dto.VoteResponseDto;
+import com.localissue.service.AreaSummaryService;
 import com.localissue.service.IssueService;
 import com.localissue.service.UserProfileService;
 import com.localissue.service.VoteService;
@@ -31,6 +33,7 @@ public class IssueController {
     private final IssueService issueService;
     private final VoteService voteService;
     private final UserProfileService userProfileService;
+    private final AreaSummaryService areaSummaryService;
 
     @PostMapping
     public ResponseEntity<IssueResponseDto> createIssue(
@@ -66,6 +69,20 @@ public class IssueController {
         String userId = jwt != null ? jwt.getSubject() : null;
         LocationFilter location = (lat != null && lng != null) ? new LocationFilter(lat, lng, radius) : null;
         return ResponseEntity.ok(issueService.getTrendingIssues(PageRequest.of(page, size), userId, location));
+    }
+
+    /**
+     * AI-generated summary of issues in the selected area, or — when no location
+     * is given — of the top trending issues across all locations.
+     * Public (matches the GET /api/issues/** rule in SecurityConfig).
+     */
+    @GetMapping("/area-summary")
+    public ResponseEntity<AreaSummaryResponseDto> getAreaSummary(
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng,
+            @RequestParam(required = false) Double radius,
+            @RequestParam(required = false) String area) {
+        return ResponseEntity.ok(areaSummaryService.getSummary(lat, lng, radius, area));
     }
 
     @GetMapping("/{id}")

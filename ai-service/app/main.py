@@ -123,7 +123,7 @@ def summarise(
 
     # 2. Generate via Gemini
     try:
-        summary = gemini.generate_area_summary(body.issues)
+        summary = gemini.generate_area_summary(body.area, body.issues)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Gemini error: {exc}") from exc
 

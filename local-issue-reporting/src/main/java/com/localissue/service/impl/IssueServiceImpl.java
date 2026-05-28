@@ -7,6 +7,7 @@ import com.localissue.dto.IssueStatusUpdateDto;
 import com.localissue.dto.LocationFilter;
 import com.localissue.entity.Issue;
 import com.localissue.exception.ResourceNotFoundException;
+import com.localissue.rabbitmq.producer.IssueEventProducer;
 import com.localissue.repository.FollowRepository;
 import com.localissue.repository.IssueRepository;
 import com.localissue.repository.VoteRepository;
@@ -39,6 +40,7 @@ public class IssueServiceImpl implements IssueService {
     private final VoteRepository voteRepository;
     private final FollowRepository followRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final IssueEventProducer issueEventProducer;
 
     @Override
     public IssueResponseDto createIssue(IssueRequestDto requestDto, String userId, String username) {
@@ -55,9 +57,10 @@ public class IssueServiceImpl implements IssueService {
                 .createdByUsername(username)
                 .build();
 
-        IssueResponseDto result = mapToResponse(issueRepository.save(issue), userId);
+        Issue saved = issueRepository.save(issue);
         evictTrendingCache();
-        return result;
+        issueEventProducer.publishCreated(saved);
+        return mapToResponse(saved, userId);
     }
 
     @Override
@@ -140,9 +143,10 @@ public class IssueServiceImpl implements IssueService {
         issue.setCategory(dto.getCategory());
         issue.setImageUrl(dto.getImageUrl());
 
-        IssueResponseDto result = mapToResponse(issueRepository.save(issue), requestingUserId);
+        Issue saved = issueRepository.save(issue);
         evictTrendingCache();
-        return result;
+        issueEventProducer.publishUpdated(saved);
+        return mapToResponse(saved, requestingUserId);
     }
 
     @Override
@@ -181,7 +185,15 @@ public class IssueServiceImpl implements IssueService {
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
 
         issue.setStatus(newStatus);
-        return mapToResponse(issueRepository.save(issue), null);
+        Issue saved = issueRepository.save(issue);
+
+        // Only publish a resolved event for terminal states — IN_PROGRESS/OPEN changes
+        // don't affect the locality summary meaningfully.
+        if ("RESOLVED".equals(newStatus) || "CLOSED".equals(newStatus)) {
+            issueEventProducer.publishResolved(saved);
+        }
+
+        return mapToResponse(saved, null);
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

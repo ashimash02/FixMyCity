@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   # ─── Infrastructure ──────────────────────────────────────────────
@@ -52,6 +50,26 @@ services:
       - keycloak_data:/opt/keycloak/data
       - ./keycloak:/opt/keycloak/data/import
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: civic-rabbitmq
+    # External ports shifted to 5673/15673 to avoid conflicts if 5672/15672 are already bound locally.
+    # The backend connects via the internal Docker network on rabbitmq:5672, so the host mapping
+    # only affects access from outside the compose network (e.g. local RabbitMQ management UI).
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   kafka:
     image: apache/kafka:3.7.0
     container_name: civic-kafka
@@ -74,6 +92,32 @@ services:
 
   # ─── Application ─────────────────────────────────────────────────
 
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: civic-ai-service
+    ports:
+      - "8000:8000"
+    # Loads GEMINI_API_KEY (and any other Gemini settings) from ai-service/.env
+    # so the key never appears in this committed file.
+    env_file:
+      - ./ai-service/.env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    # Hits the FastAPI /health endpoint. Backend uses service_healthy on this
+    # to avoid the startup race where backend boots before Gemini SDK is ready.
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=2).status == 200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: on-failure
+
   backend:
     build:
       context: ./local-issue-reporting
@@ -90,6 +134,10 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
       keycloak:
         condition: service_started
     restart: on-failure
@@ -107,4 +155,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  rabbitmq_data:
   keycloak_data:
