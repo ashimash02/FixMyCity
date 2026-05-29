@@ -23,7 +23,7 @@ services:
     image: redis:7-alpine
     container_name: civic-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -103,11 +103,6 @@ services:
     # so the key never appears in this committed file.
     env_file:
       - ./ai-service/.env
-    environment:
-      REDIS_HOST: redis
-    depends_on:
-      redis:
-        condition: service_healthy
     # Hits the FastAPI /health endpoint. Backend uses service_healthy on this
     # to avoid the startup race where backend boots before Gemini SDK is ready.
     healthcheck:

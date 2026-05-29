@@ -5,28 +5,17 @@ from pydantic import BaseModel, field_validator
 
 from app.config import settings
 from app.services.gemini_service import GeminiService, build_gemini_service
-from app.services.redis_service import RedisService, build_redis_service
 
-
-# --------------------------------------------------------------------------- #
-# Lifespan                                                                     #
-# --------------------------------------------------------------------------- #
 
 _gemini: GeminiService | None = None
-_redis: RedisService | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _gemini, _redis
+    global _gemini
     _gemini = build_gemini_service()
-    _redis = build_redis_service()
     yield
 
-
-# --------------------------------------------------------------------------- #
-# App                                                                          #
-# --------------------------------------------------------------------------- #
 
 app = FastAPI(
     title=settings.app_name,
@@ -45,15 +34,6 @@ def get_gemini() -> GeminiService:
         )
     return _gemini
 
-
-# Redis is optional — endpoints degrade gracefully if unavailable
-def get_redis() -> RedisService | None:
-    return _redis
-
-
-# --------------------------------------------------------------------------- #
-# Schemas                                                                      #
-# --------------------------------------------------------------------------- #
 
 class SummariseRequest(BaseModel):
     area: str
@@ -84,12 +64,7 @@ class SummariseResponse(BaseModel):
     area: str
     summary: str
     issue_count: int
-    cached: bool
 
-
-# --------------------------------------------------------------------------- #
-# Routes                                                                       #
-# --------------------------------------------------------------------------- #
 
 @app.get("/health")
 def health():
@@ -98,7 +73,6 @@ def health():
         "service": settings.app_name,
         "version": settings.app_version,
         "gemini_configured": _gemini is not None,
-        "redis_connected": _redis is not None,
     }
 
 
@@ -106,34 +80,15 @@ def health():
 def summarise(
     body: SummariseRequest,
     gemini: GeminiService = Depends(get_gemini),
-    redis: RedisService | None = Depends(get_redis),
 ):
-    """Return a cached or freshly generated civic summary for an area."""
-
-    # 1. Cache hit
-    if redis:
-        cached_summary = redis.get_summary(body.area)
-        if cached_summary:
-            return SummariseResponse(
-                area=body.area,
-                summary=cached_summary,
-                issue_count=len(body.issues),
-                cached=True,
-            )
-
-    # 2. Generate via Gemini
+    """Call Gemini and return a summary. No caching — the backend owns that."""
     try:
         summary = gemini.generate_area_summary(body.area, body.issues)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Gemini error: {exc}") from exc
 
-    # 3. Store in Redis
-    if redis:
-        redis.set_summary(body.area, summary)
-
     return SummariseResponse(
         area=body.area,
         summary=summary,
         issue_count=len(body.issues),
-        cached=False,
     )

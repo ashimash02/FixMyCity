@@ -6,6 +6,4 @@ python-dotenv==1.0.1
 
 google-generativeai==0.8.3
 
-# Uncomment when implementing each service:
-# confluent-kafka==2.6.0            # kafka_consumer.py
-redis==5.2.0
+# confluent-kafka==2.6.0

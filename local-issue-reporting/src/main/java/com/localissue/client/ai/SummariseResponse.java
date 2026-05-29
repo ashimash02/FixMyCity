@@ -12,5 +12,4 @@ public class SummariseResponse {
     private String summary;
     @JsonProperty("issue_count")
     private int issueCount;
-    private boolean cached;
 }
