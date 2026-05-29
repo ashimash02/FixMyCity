@@ -63,3 +63,15 @@ export const getMyIssues = (page = 0, size = 10) => {
 
 export const toggleVote = (issueId) =>
   api.post(`/issues/${issueId}/vote`)
+
+export const getAreaSummary = (location = null) => {
+  const params = new URLSearchParams()
+  if (location?.latitude != null && location?.longitude != null) {
+    params.set('lat', location.latitude)
+    params.set('lng', location.longitude)
+    params.set('radius', 10)
+    const shortName = location.name?.split(',')[0]?.trim()
+    if (shortName) params.set('area', shortName)
+  }
+  return api.get(`/issues/area-summary?${params}`)
+}

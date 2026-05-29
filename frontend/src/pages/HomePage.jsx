@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getAllIssues, getTrendingIssues, getFollowingFeed } from '@/api/issueApi'
 import { useLocationContext } from '@/context/LocationContext'
 import IssueCard from '@/components/IssueCard'
+import AiSummaryBanner from '@/components/AiSummaryBanner'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, Clock, TrendingUp, Users } from 'lucide-react'
 
@@ -62,6 +63,9 @@ export default function HomePage() {
           Browse and vote on issues reported in your area
         </p>
       </div>
+
+      {/* AI summary — hidden on the Following tab since it's person-based, not area-based */}
+      {tab !== 'following' && <AiSummaryBanner />}
 
       {/* Tab toggle */}
       <div className="mb-6 inline-flex rounded-lg border bg-muted p-1 gap-1">

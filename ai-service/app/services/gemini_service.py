@@ -17,9 +17,11 @@ The following civic issues were reported by residents in {area}. Write ONE conci
 paragraph (max 4 sentences) summarising what residents in this area are concerned about.
 
 Guidelines:
+- Always write the summary regardless of how many issues are listed — even one issue is enough
 - Third person, factual, no hype or marketing language
 - Synthesise the themes — do NOT list issues individually
 - Mention {area} naturally in the paragraph
+- Never ask for more issues or say the list is incomplete — work with what is given
 
 Issues:
 {issues}
@@ -34,9 +36,11 @@ The following are the top-voted civic issues across the city right now. Write ON
 concise paragraph (max 4 sentences) capturing what's drawing the most resident attention.
 
 Guidelines:
+- Always write the summary regardless of how many issues are listed — even one issue is enough
 - Third person, factual, no hype
 - Synthesise the themes — do NOT list issues individually
 - Frame as a citywide trend, not tied to one neighbourhood
+- Never ask for more issues or say the list is incomplete — work with what is given
 
 Issues:
 {issues}
