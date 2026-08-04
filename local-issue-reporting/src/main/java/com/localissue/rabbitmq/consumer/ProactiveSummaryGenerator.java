@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Consumes issue lifecycle events and proactively regenerates the AI summary
@@ -90,6 +91,15 @@ public class ProactiveSummaryGenerator {
 
         try {
             String summary = aiServiceClient.summarise(areaLabel, titles);
+
+            // Wipe all existing area keys first — stale on-demand keys (keyed by navbar
+            // coordinates) would otherwise persist alongside the new proactive key, causing
+            // users to receive old summaries until their specific key's TTL expires.
+            Set<String> staleKeys = redisTemplate.keys(AreaSummaryService.AREA_CACHE_PREFIX + "*");
+            if (staleKeys != null && !staleKeys.isEmpty()) {
+                redisTemplate.delete(staleKeys);
+            }
+
             String cacheKey = buildAreaCacheKey(lat, lng);
             redisTemplate.opsForValue().set(cacheKey, summary, Duration.ofMinutes(cacheTtlMinutes));
             log.info("Area summary stored at key '{}' ({} issues, area='{}')",

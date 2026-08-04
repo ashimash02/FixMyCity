@@ -12,7 +12,7 @@ public interface IssueService {
 
     IssueResponseDto createIssue(IssueRequestDto requestDto, String userId, String username);
 
-    Page<IssueResponseDto> getAllIssues(Pageable pageable, String requestingUserId, LocationFilter location);
+    Page<IssueResponseDto> getAllIssues(Pageable pageable, String requestingUserId, LocationFilter location, String sortBy);
 
     Page<IssueResponseDto> getTrendingIssues(Pageable pageable, String requestingUserId, LocationFilter location);
 

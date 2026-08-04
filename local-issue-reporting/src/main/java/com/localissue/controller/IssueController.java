@@ -14,8 +14,6 @@ import com.localissue.service.VoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +21,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 
 @RestController
@@ -48,14 +47,17 @@ public class IssueController {
 
     @GetMapping
     public ResponseEntity<Page<IssueResponseDto>> getAllIssues(
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lng,
             @RequestParam(defaultValue = "25") double radius,
+            @RequestParam(defaultValue = "recent") String sortBy,
             @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt != null ? jwt.getSubject() : null;
         LocationFilter location = (lat != null && lng != null) ? new LocationFilter(lat, lng, radius) : null;
-        return ResponseEntity.ok(issueService.getAllIssues(pageable, userId, location));
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return ResponseEntity.ok(issueService.getAllIssues(pageable, userId, location, sortBy));
     }
 
     @GetMapping("/trending")
@@ -118,15 +120,19 @@ public class IssueController {
 
     @GetMapping("/following")
     public ResponseEntity<Page<IssueResponseDto>> getFollowingFeed(
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal Jwt jwt) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(issueService.getFollowingFeed(pageable, jwt.getSubject()));
     }
 
     @GetMapping("/my-posts")
     public ResponseEntity<Page<IssueResponseDto>> getMyIssues(
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal Jwt jwt) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(issueService.getMyIssues(pageable, jwt.getSubject()));
     }
 

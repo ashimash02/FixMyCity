@@ -64,14 +64,20 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
-    public Page<IssueResponseDto> getAllIssues(Pageable pageable, String requestingUserId, LocationFilter location) {
+    public Page<IssueResponseDto> getAllIssues(Pageable pageable, String requestingUserId, LocationFilter location, String sortBy) {
         if (location == null) {
             return issueRepository.findAll(pageable)
                     .map(issue -> mapToResponse(issue, requestingUserId, null));
         }
-        // Bounding box pre-filter, then precise Haversine, then sort nearest first
-        List<IssueResponseDto> results = candidatesWithDistance(location).stream()
-                .sorted(Comparator.comparingDouble(IssueDist::distanceKm))
+
+        List<IssueDist> candidates = candidatesWithDistance(location);
+
+        Comparator<IssueDist> comparator = "distance".equalsIgnoreCase(sortBy)
+                ? Comparator.comparingDouble(IssueDist::distanceKm)
+                : Comparator.comparing((IssueDist d) -> d.issue().getCreatedAt(), Comparator.reverseOrder());
+
+        List<IssueResponseDto> results = candidates.stream()
+                .sorted(comparator)
                 .map(d -> mapToResponse(d.issue(), requestingUserId, d.distanceKm()))
                 .toList();
         return toPage(results, pageable);

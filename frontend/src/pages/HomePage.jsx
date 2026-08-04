@@ -4,7 +4,7 @@ import { useLocationContext } from '@/context/LocationContext'
 import IssueCard from '@/components/IssueCard'
 import AiSummaryBanner from '@/components/AiSummaryBanner'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertCircle, Clock, TrendingUp, Users } from 'lucide-react'
+import { Loader2, AlertCircle, Clock, TrendingUp, Users, MapPin, ArrowDownUp } from 'lucide-react'
 
 const TABS = [
   { key: 'trending',  label: 'Trending',  icon: TrendingUp },
@@ -15,6 +15,7 @@ const TABS = [
 export default function HomePage() {
   const { location } = useLocationContext()
   const [tab, setTab] = useState('trending')
+  const [sortBy, setSortBy] = useState('recent')
   const [issues, setIssues] = useState([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -22,6 +23,7 @@ export default function HomePage() {
   const [error, setError] = useState(null)
 
   useEffect(() => { setPage(0) }, [location, tab])
+  useEffect(() => { setPage(0) }, [sortBy])
 
   useEffect(() => {
     setLoading(true)
@@ -33,7 +35,7 @@ export default function HomePage() {
     } else if (tab === 'trending') {
       request = getTrendingIssues(page, 10, location ?? null)
     } else {
-      request = getAllIssues(page, 10, location ?? null)
+      request = getAllIssues(page, 10, location ?? null, sortBy)
     }
 
     request
@@ -43,7 +45,7 @@ export default function HomePage() {
       })
       .catch(() => setError('Failed to load issues. Is the backend running?'))
       .finally(() => setLoading(false))
-  }, [tab, page, location])
+  }, [tab, page, location, sortBy])
 
   const handleTabChange = (key) => {
     if (key === tab) return
@@ -86,13 +88,41 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* Location filter pill — not shown on following tab */}
+      {/* Location filter pill + sort toggle — not shown on following tab */}
       {location && tab !== 'following' && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Showing issues in</span>
-          <span className="rounded-full bg-primary/10 px-3 py-0.5 text-xs font-medium text-primary">
-            {location.name.split(',')[0].trim()}
-          </span>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Showing issues in</span>
+            <span className="rounded-full bg-primary/10 px-3 py-0.5 text-xs font-medium text-primary">
+              {location.name.split(',')[0].trim()}
+            </span>
+          </div>
+
+          {/* Sort toggle — only on Latest tab since Trending has its own sort */}
+          {tab === 'latest' && (
+            <div className="flex items-center gap-1 rounded-lg border bg-muted p-0.5">
+              <button
+                onClick={() => setSortBy('recent')}
+                className={[
+                  'flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors',
+                  sortBy === 'recent' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                ].join(' ')}
+              >
+                <Clock className="h-3 w-3" />
+                Most Recent
+              </button>
+              <button
+                onClick={() => setSortBy('distance')}
+                className={[
+                  'flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors',
+                  sortBy === 'distance' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                ].join(' ')}
+              >
+                <MapPin className="h-3 w-3" />
+                Nearest
+              </button>
+            </div>
+          )}
         </div>
       )}
 
