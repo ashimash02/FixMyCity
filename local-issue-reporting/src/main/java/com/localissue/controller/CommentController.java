@@ -5,7 +5,7 @@ import com.localissue.dto.CommentResponseDto;
 import com.localissue.entity.Comment;
 import com.localissue.entity.Issue;
 import com.localissue.exception.ResourceNotFoundException;
-import com.localissue.kafka.producer.NotificationEventProducer;
+import com.localissue.service.NotificationAsyncService;
 import com.localissue.repository.CommentRepository;
 import com.localissue.repository.IssueRepository;
 import com.localissue.service.UserProfileService;
@@ -28,7 +28,7 @@ public class CommentController {
     private final CommentRepository commentRepository;
     private final IssueRepository issueRepository;
     private final UserProfileService userProfileService;
-    private final NotificationEventProducer notificationEventProducer;
+    private final NotificationAsyncService notificationAsyncService;
 
     @GetMapping
     public ResponseEntity<Page<CommentResponseDto>> getComments(
@@ -64,7 +64,7 @@ public class CommentController {
         commentRepository.save(comment);
 
         if (issue.getCreatedBy() != null && !issue.getCreatedBy().equals(userId)) {
-            notificationEventProducer.publishCommentEvent(
+            notificationAsyncService.notifyComment(
                     issue.getCreatedBy(),
                     userId,
                     username,

@@ -4,7 +4,7 @@ import com.localissue.dto.VoteResponseDto;
 import com.localissue.entity.Issue;
 import com.localissue.entity.Vote;
 import com.localissue.exception.ResourceNotFoundException;
-import com.localissue.kafka.producer.NotificationEventProducer;
+import com.localissue.service.NotificationAsyncService;
 import com.localissue.repository.IssueRepository;
 import com.localissue.repository.UserProfileRepository;
 import com.localissue.repository.VoteRepository;
@@ -20,7 +20,7 @@ public class VoteServiceImpl implements VoteService {
     private final VoteRepository voteRepository;
     private final IssueRepository issueRepository;
     private final UserProfileRepository userProfileRepository;
-    private final NotificationEventProducer notificationEventProducer;
+    private final NotificationAsyncService notificationAsyncService;
     private final IssueServiceImpl issueServiceImpl;
 
     @Override
@@ -38,7 +38,7 @@ public class VoteServiceImpl implements VoteService {
 
             if (issue.getCreatedBy() != null && !issue.getCreatedBy().equals(userId)) {
                 userProfileRepository.findById(userId).ifPresent(sender ->
-                    notificationEventProducer.publishVoteEvent(
+                    notificationAsyncService.notifyVote(
                             issue.getCreatedBy(),
                             userId,
                             sender.getUsername(),

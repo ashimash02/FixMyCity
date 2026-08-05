@@ -4,7 +4,7 @@ import com.localissue.dto.FollowResponseDto;
 import com.localissue.entity.Follow;
 import com.localissue.entity.UserProfile;
 import com.localissue.exception.ResourceNotFoundException;
-import com.localissue.kafka.producer.NotificationEventProducer;
+import com.localissue.service.NotificationAsyncService;
 import com.localissue.repository.FollowRepository;
 import com.localissue.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class FollowController {
 
     private final FollowRepository followRepository;
     private final UserProfileRepository userProfileRepository;
-    private final NotificationEventProducer notificationEventProducer;
+    private final NotificationAsyncService notificationAsyncService;
 
     @PostMapping("/{userId}/follow")
     @Transactional
@@ -50,7 +50,7 @@ public class FollowController {
                 .following(following)
                 .build());
 
-        notificationEventProducer.publishFollowEvent(
+        notificationAsyncService.notifyFollow(
                 following.getUserId(),
                 follower.getUserId(),
                 follower.getUsername());
